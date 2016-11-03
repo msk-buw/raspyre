@@ -10,22 +10,26 @@ that identifies this behaviour as such.
 
 from .pollingprocess import PollingProcess
 from .handler import HandlerProcess
+from .blink import BlinkProcess
 from raspyre import sensorbuilder
 
 import sys
-if sys.version_info > (2, 7):
+if sys.version_info[0] == 3:
     import xmlrpc.server as xmlrpclib
 else:
     import xmlrpclib
 import logging
 import os
-import shutil
 import subprocess
+import shutil
+#import subprocess
 import datetime
 import json
 import traceback
 import mmap
 
+
+import python_hosts
 
 logger = logging.getLogger(__name__)
 
@@ -49,6 +53,8 @@ class RaspyreService(object):
         self.data_directory = os.path.normpath(data_directory)
         self.configuration_directory = os.path.normpath(configuration_directory)
         self.sensor_count = 0
+
+        self.blink_process = None
         logger.debug("Initialized RaspyreService")
 
     def ping(self):
@@ -61,6 +67,78 @@ class RaspyreService(object):
         """
         logger.debug("ping() called")
         return True
+
+
+    def start_blink(self):
+        logger.debug("start_blink() called")
+        if self.blink_process is None:
+            self.blink_process = BlinkProcess()
+            self.blink_process.start()
+            return True
+        else:
+            return False
+
+    def stop_blink(self):
+        logger.debug("stop_blink() called")
+        if self.blink_process is not None:
+            self.blink_process.terminate()
+            self.blink_process.join()
+            self.blink_process = None
+            return True
+        else:
+            return False
+
+    def start_ntp(self):
+        #rt = os.system('sudo systemctl start ntp.service &')
+        #return rt
+        subprocess.Popen(['sudo', '/bin/systemctl', 'start', 'ntp.service'])
+        return True
+
+    def stop_ntp(self):
+        #rt = os.system('sudo systemctl stop ntp.service &')
+        subprocess.Popen(['sudo', '/bin/systemctl', 'stop', 'ntp.service'])
+        return True
+
+    def ntp_sync(self):
+        #rt = os.system('sudo ntpd -q -g &')
+        subprocess.Popen(['sudo', 'ntpd', '-g', '-q'])
+        return True
+
+    def ntp_set_server(self, ip_str):
+        with open('/etc/ntp.conf', 'w') as ntpfile:
+            ntpfile.write('driftfile /var/lib/ntp/ntp.drift\n')
+            ntpfile.write('statsdir /var/log/ntpstats/\n')
+            ntpfile.write('statistics loopstats peerstats clockstats\n')
+            ntpfile.write('filegen loopstats file loopstats type day enable\n')
+            ntpfile.write('filegen peerstats file peerstats type day enable\n')
+            ntpfile.write('filegen clockstats file clockstats type day enable\n')
+            ntpfile.write('server {} minpoll 3 maxpoll 5 iburst prefer\n'.format(ip_str))
+            ntpfile.write('restrict -4 default kod notrap nomodify nopeer noquery\n')
+            ntpfile.write('restrict 10.0.0.0 mask 255.0.0.0 nomodify notrap\n')
+            ntpfile.write('restrict 127.0.0.1\n')
+        return True
+
+    def ntp_master(self):
+        with open('/etc/ntp.conf', 'w') as ntpfile:
+            ntpfile.write('driftfile /var/lib/ntp/ntp.drift\n')
+            ntpfile.write('statsdir /var/log/ntpstats/\n')
+            ntpfile.write('statistics loopstats peerstats clockstats\n')
+            ntpfile.write('filegen loopstats file loopstats type day enable\n')
+            ntpfile.write('filegen peerstats file peerstats type day enable\n')
+            ntpfile.write('filegen clockstats file clockstats type day enable\n')
+            ntpfile.write('server 127.127.1.0 prefer\n')
+            ntpfile.write('restrict -4 default kod notrap nomodify nopeer noquery\n')
+            ntpfile.write('restrict 10.0.0.0 mask 255.0.0.0 nomodify notrap\n')
+            ntpfile.write('restrict 127.0.0.1\n')
+        return True
+
+    def get_dns_info(self):
+        hosts = python_hosts.Hosts(path='/tmp/hosts.olsr')
+        if len(hosts.entries) > 0:
+            raspyre_hosts = { entry.names[0]:entry.address for entry in hosts.entries if entry.entry_type == 'ipv4' and entry.address.startswith('10')}
+            return raspyre_hosts
+        else:
+            return False
 
     def start_measurement(self, measurementname, sensornames=None):
         """This function starts a measurement process for the specified sensors.
@@ -110,6 +188,7 @@ class RaspyreService(object):
             logger.error(traceback.format_exc())
             return False
         return True
+
 
     def stop_measurement(self, sensornames=None):
         """This function stops a currently running measurement.

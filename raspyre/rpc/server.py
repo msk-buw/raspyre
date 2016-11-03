@@ -5,10 +5,11 @@ SHM platform.
 
 """
 from .. import _version
-from . import mplog
+#from . import mplog
+import multiprocessing_logging
 from .functions import RaspyreService
 import sys
-if sys.version_info > (2, 7):
+if sys.version_info[0] == 3:
     from xmlrpc.server import SimpleXMLRPCServer
     from xmlrpc.server import SimpleXMLRPCRequestHandler
     from http.server import SimpleHTTPRequestHandler
@@ -124,13 +125,23 @@ def run_rpc_server(datadir, address="0.0.0.0", port=8000, logfile=None, configdi
 
     if logfile is not None:
         logfile = os.path.abspath(logfile)
-        mphandler = mplog.MultiProcessingLog(name=logfile, mode='a', maxsize=1024, rotate=0)
-        mphandler.setFormatter(formatter)
+        handler = logging.handlers.RotatingFileHandler(
+            filename=logfile,
+            mode='a')
+        handler.setFormatter(formatter)
+        #mphandler = mplog.MultiProcessingLog(name=logfile, mode='a', maxsize=1024, rotate=0)
+        #mphandler.setFormatter(formatter)
+
         if verbose:
-            mphandler.setLevel(logging.DEBUG)
+            #mphandler.setLevel(logging.DEBUG)
+            handler.setLevel(logging.DEBUG)
         else:
-            mphandler.setLevel(logging.INFO)
-        root_logger.addHandler(mphandler)
+            #mphandler.setLevel(logging.INFO)
+            handler.setLevel(logging.INFO)
+        #root_logger.addHandler(mphandler)
+        root_logger.addHandler(handler)
+        multiprocessing_logging.install_mp_handler()
+
 
     sys.excepthook = handle_exception
 
