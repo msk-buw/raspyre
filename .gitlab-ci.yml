@@ -20,15 +20,15 @@ before_script:
 stages:
     - test
     - build
-    - drivers
-    - deploy
+#    - drivers
+#    - deploy
 
 test:
     stage: test
     script:
     - pip install -r requirements-tests.txt
     - pip install -r requirements.txt
-    - py.test --cov=raspyre tests/
+      #- py.test --cov=raspyre tests/
 
 build:
     stage: build
@@ -41,20 +41,20 @@ build:
     - devpi use sensors/dev
     - devpi upload --formats bdist_wheel,sdist
 
-documentation_html:
-    stage: build
-    image: ikypiky/sphinx:latest
-    script:
-    - cd docs
-    - make html
-
-test_firstsensor:
-    stage: drivers
-    script:
-    - "curl -X POST -F token=6633e94aaf6b1c2ce15393612892d1 -F ref=master http://nas-msk-vir.bauing.uni-weimar.de/api/v3/projects/6/trigger/builds"
-
-master_documentation:
-    stage: deploy
-    script:
-    - "curl -X POST -F token=686b07b3cfd2b840409511abbce4fb -F ref=master http://nas-msk-vir.bauing.uni-weimar.de/api/v3/projects/8/trigger/builds"
-
+#documentation_html:
+#    stage: build
+#    image: ikypiky/sphinx:latest
+#    script:
+#    - cd docs
+#    - make html
+#
+#test_firstsensor:
+#    stage: drivers
+#    script:
+#    - "curl -X POST -F token=6633e94aaf6b1c2ce15393612892d1 -F ref=master http://nas-msk-vir.bauing.uni-weimar.de/api/v3/projects/6/trigger/builds"
+#
+#master_documentation:
+#    stage: deploy
+#    script:
+#    - "curl -X POST -F token=686b07b3cfd2b840409511abbce4fb -F ref=master http://nas-msk-vir.bauing.uni-weimar.de/api/v3/projects/8/trigger/builds"
+#
