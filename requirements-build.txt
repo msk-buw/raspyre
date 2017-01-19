@@ -1,0 +1,2 @@
+devpi-client
+versioneer

@@ -7,7 +7,6 @@ import xmlrpclib
 import datetime
 import sys
 import os
-import yaml
 import logging
 import logging.config
 
@@ -176,7 +175,7 @@ class RaspyreRPC(object):
 
 
 
-if __name__ == "__main__":
+def rpc_server_main():
     # setup
     logging_config = {
         'disable_existing_loggers': False,
@@ -248,3 +247,6 @@ if __name__ == "__main__":
     server.register_instance(raspyre_rpc)
     server.serve_forever()
 
+
+if __name__ == "__main__":
+    rpc_server_main()

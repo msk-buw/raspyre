@@ -18,7 +18,6 @@ requirements = [
     # TODO: put package requirements here
     #'click',
     'arrow',
-    'pyyaml'
 ]
 
 test_requirements = [
@@ -29,7 +28,7 @@ setup(
     name='raspyre_rpcserver',
     #version=versioneer.get_version(),
     #cmdclass=versioneer.get_cmdclass(),
-    version="0.1",
+    version="0.2",
     description="RPC Server Application for the raspyre sensors framework",
     long_description=readme + '\n\n' + history,
     author="Jan Frederick Eick",
@@ -38,7 +37,7 @@ setup(
     packages=find_packages(exclude=['contrib', 'docs', 'tests']),
     entry_points={
         'console_scripts':[
-            'raspyre-rpcserver=raspyre_rpcserver.RpcServer:main',
+            'raspyre-rpcserver=raspyre_rpcserver.RpcServer:rpc_server_main',
             ],
         },
     include_package_data=True,
