@@ -69,6 +69,7 @@ class RaspyreRPC(object):
             else:
                 # TODO start measurement
                 #self.sensors[sensorname].start(measurementname)
+                self.measurement_processes[sensorname].setMeasurementName(measurementname)
                 self.measurement_processes[sensorname].start()
                 self.sensors[sensorname]["measuring"] = True
         return True
