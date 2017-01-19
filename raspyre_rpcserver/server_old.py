@@ -1,7 +1,4 @@
 from raspyre import sensorbuilder, helpers
-#import convertbin2csv
-#import numpy as np
-#from daemonize import Daemonize
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 from SimpleXMLRPCServer import SimpleXMLRPCRequestHandler
 from ctypes import c_char_p
@@ -125,7 +122,8 @@ def start():
 def updateConfigFile(section, key, value):
     logger.info("Updating configuration file.")
     config_file = "rpc_server.ini"
-    current_dir = os.path.dirname(os.path.realpath(__file__))
+    #current_dir = os.path.dirname(os.path.realpath(__file__))
+    current_dir = os.getcwd()
     config_path = os.path.join(current_dir, config_file)
     config = ConfigParser.SafeConfigParser()
     config.read(config_path)
@@ -266,7 +264,7 @@ def main():
     logger.info("Started RPC Server daemon.")
 
     #sensor = sensorbuilder.createSensor(type="mockup", sps=600)
-    sensor = sensorbuilder.createSensor(type="firstsensor", channel=0)
+    sensor = sensorbuilder.createSensor(type="mockup", sps=100)
 
     loadConfigFile()
 
@@ -276,7 +274,6 @@ def main():
     server.register_function(start)
     server.register_function(stop)
     server.register_function(status)
-    #server.register_function(convertBinToCSV)
     server.register_function(setColumnTitles)
     server.register_function(downloadFile)
     server.register_function(getLastFilename)
