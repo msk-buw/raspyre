@@ -178,19 +178,65 @@ class RaspyreRPC(object):
 
 if __name__ == "__main__":
     # setup
+    logging_config = {
+        'disable_existing_loggers': False,
+        'formatters': {
+            'extended': {
+                'format': '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+             },
+            'simple': {
+                'format': '%(name)-20s%(levelname)-8s%(message)s'
+            }
+        },
+        'handlers': {
+            'console': {
+                'class': 'logging.StreamHandler',
+                'formatter': 'extended',
+                'level': 'DEBUG',
+                'stream': 'ext://sys.stderr'
+            },
+            'mplog': {
+                'class': 'raspyre_rpcserver.mplog.MultiProcessingLog',
+                'formatter': 'extended',
+                'level': 'INFO',
+                'maxsize': 1024,
+                'mode': 'a',
+                'name': 'rpc_server.log',
+                'rotate': 0
+            }
+        },
+        'root': {
+            'handlers': ['console', 'mplog'],
+            'level': 'DEBUG'
+        },
+        'version': 1}
+
+
     if len(sys.argv) < 2:
-        sys.exit('Usage: {} /data/directory/path'.format(sys.argv[0]))
+        sys.exit('Usage: {} /data/directory/path [/logging/directory]'.format(sys.argv[0]))
+
+    logging_path = '/tmp'
+    if len(sys.argv) == 3:
+        logging_path = sys.argv[2]
+
     logger = logging.getLogger("rpc_server")
     data_directory = os.path.abspath(sys.argv[1])
-    logging_conf_file = 'logging.yaml'
-    current_dir = os.getcwd()
-    path = os.path.join(current_dir, logging_conf_file)
-    if os.path.exists(path):
-        with open(path, 'rt') as f:
-            config = yaml.load(f.read())
-        logging.config.dictConfig(config)
-    else:
-        print "could not find logging configuration file"
+    #logging_conf_file = 'logging.yaml'
+    #current_dir = os.getcwd()
+    #path = os.path.join(current_dir, logging_conf_file)
+    #config = {}
+    #if os.path.exists(path):
+    #    with open(path, 'rt') as f:
+    #        config = yaml.load(f.read())
+    #        print config
+    #    logging.config.dictConfig(config)
+    logging_config['handlers']['mplog']['name'] = \
+        os.path.join(logging_path, logging_config['handlers']['mplog']['name'])
+    logging.config.dictConfig(logging_config)
+    #else:
+    #    print "could not find logging configuration file"
+
+
 
     logger.info("Starting Raspyre RPC Server")
 

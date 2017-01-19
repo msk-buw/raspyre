@@ -5,8 +5,10 @@ import time
 import os
 import datetime
 import struct
+from BinaryWriter import generate_binary_header
 
 class MeasureProcess(multiprocessing.Process):
+    __version = "0.5"
     def __init__(self, sensor, sensor_name, config, frequency, axis, data_dir, chunked=False, chunk_minutes=10):
         multiprocessing.Process.__init__(self)
         self.measurement_name = "unnamed"
@@ -14,6 +16,7 @@ class MeasureProcess(multiprocessing.Process):
         self.sensor_name = sensor_name
         self.config = config
         self.frequency = frequency
+        self.frequency_step = 1.0 / self.frequency
         self.axis = axis
         self.fmt = sensor.struct_fmt(axis)
         self.struct = struct.Struct('d' + self.fmt)
@@ -22,7 +25,20 @@ class MeasureProcess(multiprocessing.Process):
         self.chunk_minutes = chunk_minutes
         self.exitEvent = multiprocessing.Event()
         self.logger = logging.getLogger("measurement")
-
+        self.metadata = {"devicename":"Raspberry Pi 2 Model B",
+                         "version": self.__version,
+                         "frequency": self.frequency,
+                         "type": "manual",
+                         "sensors": 1,
+                         "vendor": str(self.sensor.__class__.__name__),
+                         "name": self.sensor_name,
+                         "delay": 0,
+                         "range": 0,
+                         "resolution": 0,
+                         "power": 0}
+        date_float = arrow.utcnow().float_timestamp
+        self.units = ['dt64']
+        self.file_header = generate_binary_header(date_float, self.metadata, self.fmt, self.units, self.axis)
 
     def setMeasurementName(self, measurement_name):
         self.measurement_name = measurement_name
@@ -48,7 +64,7 @@ class MeasureProcess(multiprocessing.Process):
             with open(filename, 'wb') as f:
                 self.logger.info("Starting file: %s" % filename)
                 while True:
-                    next_call = time.time() + 0.005
+                    next_call = time.time() + self.frequency_step
                     record = self.sensor.getRecord(*self.axis)
                     #rec.append(pointValue)
                     count += 1
