@@ -9,6 +9,7 @@ import sys
 import os
 import logging
 import logging.config
+import subprocess
 
 class RequestHandler(SimpleXMLRPCRequestHandler, SimpleHTTPRequestHandler):
     rpc_paths = ('/RPC2', '/')
@@ -159,10 +160,21 @@ class RaspyreRPC(object):
         return str(datetime.datetime.now())
 
     def setSystemDate(self, date):
-        print type(date)
-        print date
-        if not isinstance(date, datetime.datetime):
-            raise xmlrpclib.Fault(1, 'Must provide a DATE type!')
+        #print type(date)
+        #print date
+        #if not isinstance(date, datetime.datetime):
+        #    raise xmlrpclib.Fault(1, 'Must provide a DATE type!')
+            #p = subprocess.run(['date', '-s', date],
+            #            stdout=subprocess.PIPE,
+            #            stderr=subprocess.PIPE,
+            #            check=True)
+
+        p = subprocess.Popen(['date', '-s', date],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE)
+        output, errors = p.communicate()
+        if errors:
+            raise xmlrpclib.Fault(1, "Error during date setting: {}".format(errors))
         return True
 
     def setExtra(self, extra={}):
