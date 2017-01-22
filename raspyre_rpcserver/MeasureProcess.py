@@ -37,7 +37,7 @@ class MeasureProcess(multiprocessing.Process):
                          "resolution": 0,
                          "power": 0}
         date_float = arrow.utcnow().float_timestamp
-        self.units = ['dt64']
+        self.units = ['dt64'] + sensor.units(axis)
         self.file_header = generate_binary_header(date_float, self.metadata, self.fmt, self.units, self.axis)
 
     def setMeasurementName(self, measurement_name):

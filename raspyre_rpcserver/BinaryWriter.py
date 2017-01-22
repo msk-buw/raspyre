@@ -54,12 +54,12 @@ def generate_binary_header(date_float, metadata, fmt, units, column_names):
     # write size of fmt
     byte_buffer.write(struct.pack('i', fmt_size))
 
-    # write size of column_names
-    byte_buffer.write(struct.pack('i', column_names_size))
 
     # write size of units
     byte_buffer.write(struct.pack('i', units_size))
 
+    # write size of column_names
+    byte_buffer.write(struct.pack('i', column_names_size))
 
     # write actual metadatastring
     byte_buffer.write(metadatastring.getvalue())
@@ -67,11 +67,14 @@ def generate_binary_header(date_float, metadata, fmt, units, column_names):
     # write fmt
     byte_buffer.write(fmt)
 
+    # write units_line
+    byte_buffer.write(units_line)
+
     # write column names
     byte_buffer.write(column_names_line)
 
-    # write units_line
-    byte_buffer.write(units_line)
+    # header finished
+
     byte_buffer.seek(0)
     return byte_buffer.read()
 
