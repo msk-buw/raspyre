@@ -196,7 +196,7 @@ def rpc_server_main():
                 'stream': 'ext://sys.stderr'
             },
             'mplog': {
-                'class': 'raspyre_rpcserver.mplog.MultiProcessingLog',
+                'class': 'mplog.MultiProcessingLog',
                 'formatter': 'extended',
                 'level': 'INFO',
                 'maxsize': 1024,
