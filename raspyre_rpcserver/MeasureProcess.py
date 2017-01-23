@@ -62,6 +62,7 @@ class MeasureProcess(multiprocessing.Process):
             filetimestamp = arrow.utcnow().format('YYYY-MM-DD-HH-mm-ss')
             filename = os.path.join(path, self.measurement_name + "_" + self.sensor_name + "_" + filetimestamp + ".bin")
             with open(filename, 'wb') as f:
+                f.write(self.file_header)
                 self.logger.info("Starting file: %s" % filename)
                 while True:
                     next_call = time.time() + self.frequency_step
