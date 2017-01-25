@@ -18,8 +18,8 @@ class MeasureProcess(multiprocessing.Process):
         self.frequency = frequency
         self.frequency_step = 1.0 / self.frequency
         self.axis = axis
-        self.fmt = "".join(sensor.struct_fmt(axis))
-        self.struct = struct.Struct('d' + self.fmt)
+        self.fmt = "d" + "".join(sensor.struct_fmt(axis))
+        self.struct = struct.Struct(self.fmt)
         self.data_dir = data_dir
         self.chunked = chunked
         self.chunk_minutes = chunk_minutes
