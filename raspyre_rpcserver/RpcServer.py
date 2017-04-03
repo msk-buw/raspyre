@@ -2,7 +2,10 @@ from MeasureProcess import MeasureProcess
 import raspyre.sensorbuilder
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 from SimpleXMLRPCServer import SimpleXMLRPCRequestHandler
+from SimpleXMLRPCServer import SimpleXMLRPCDispatcher
 from SimpleHTTPServer import SimpleHTTPRequestHandler
+import SocketServer
+
 import xmlrpclib
 import datetime
 import sys
@@ -10,6 +13,44 @@ import os
 import logging
 import logging.config
 import subprocess
+
+class VerboseFaultXMLRPCServer(SimpleXMLRPCServer):
+    def _marshaled_dispatch(self, data, dispatch_method = None, path = None):
+        try:
+            params, method = xmlrpclib.loads(data)
+
+            # generate response
+            if dispatch_method is not None:
+                response = dispatch_method(method, params)
+            else:
+                response = self._dispatch(method, params)
+            # wrap response in a singleton tuple
+            response = (response,)
+            response = xmlrpclib.dumps(response, methodresponse=1,
+                                       allow_none=self.allow_none, encoding=self.encoding)
+        except:
+            # report low level exception back to server
+            # (each dispatcher should have handled their own
+            # exceptions)
+            exc_type, exc_value, tb = sys.exc_info()
+            #while tb.tb_next is not None:
+            #    tb = tb.tb_next  # find last frame of the traceback
+            lineno = tb.tb_lineno
+            code = tb.tb_frame.f_code
+            filename = code.co_filename
+            name = code.co_name
+            #response = xmlrpclib.dumps(
+            #    xmlrpclib.Fault(1, "%s:%s FILENAME: %s LINE: %s NAME: %s" % (
+            #        exc_type, exc_value, filename, lineno, name)),
+            #    encoding=self.encoding, allow_none=self.allow_none)
+            response = xmlrpclib.dumps(
+                xmlrpclib.Fault(1, "%s:%s" % (exc_type, exc_value)),
+                encoding=self.encoding, allow_none=self.allow_none)
+
+            #import ipdb; ipdb.set_trace()
+            logger = logging.getLogger(__name__)
+            logger.error("Dispatch exception", exc_info=(exc_type, exc_value, tb))
+        return response
 
 class RequestHandler(SimpleXMLRPCRequestHandler, SimpleHTTPRequestHandler):
     rpc_paths = ('/RPC2', '/')
@@ -185,7 +226,19 @@ class RaspyreRPC(object):
 
     def clearSensors(self):
         self.sensors = {}
+        return True
 
+
+def handle_exception(exc_type, exc_value, exc_traceback):
+    print "handler called"
+    
+    logger = logging.getLogger(__name__)
+    
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return 
+
+    logger.error("Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
 
 
 def rpc_server_main():
@@ -231,7 +284,7 @@ def rpc_server_main():
     if len(sys.argv) == 3:
         logging_path = sys.argv[2]
 
-    logger = logging.getLogger("rpc_server")
+    logger = logging.getLogger(__name__)
     data_directory = os.path.abspath(sys.argv[1])
     #logging_conf_file = 'logging.yaml'
     #current_dir = os.getcwd()
@@ -249,11 +302,13 @@ def rpc_server_main():
     #    print "could not find logging configuration file"
 
 
+    sys.excepthook = handle_exception
 
     logger.info("Starting Raspyre RPC Server")
 
-    server = SimpleXMLRPCServer(("0.0.0.0", 8000),
-                                requestHandler=RequestHandler)
+    server = VerboseFaultXMLRPCServer(("0.0.0.0", 8000),
+                                requestHandler=RequestHandler,
+                                allow_none=True)
 
     raspyre_rpc = RaspyreRPC(data_directory=data_directory)
     server.register_introspection_functions()
