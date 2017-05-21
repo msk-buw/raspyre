@@ -70,3 +70,5 @@ server/
 
 # rope settings
 .ropeproject/
+/.venv
+/data/*

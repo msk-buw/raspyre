@@ -6,6 +6,8 @@ from codecs import open
 from os import path
 from setuptools import setup, find_packages
 
+import versioneer
+
 here = path.abspath(path.dirname(__file__))
 
 with open(path.join(here, 'README.rst'), encoding='utf-8') as readme_file:
@@ -15,20 +17,20 @@ with open(path.join(here, 'HISTORY.rst'), encoding='utf-8') as history_file:
     history = history_file.read().replace('.. :changelog:', '')
 
 requirements = [
-    # TODO: put package requirements here
-    #'click',
-    'arrow',
+    'raspyre',
+    'arrow'
 ]
 
 test_requirements = [
     # TODO: put package test requirements here
+    'pytest'
 ]
 
 setup(
-    name='raspyre_rpcserver',
-    #version=versioneer.get_version(),
-    #cmdclass=versioneer.get_cmdclass(),
-    version="0.2",
+    name='raspyre-rpcserver',
+    version=versioneer.get_version(),
+    cmdclass=versioneer.get_cmdclass(),
+    # version="0.2",
     description="RPC Server Application for the raspyre sensors framework",
     long_description=readme + '\n\n' + history,
     author="Jan Frederick Eick",
