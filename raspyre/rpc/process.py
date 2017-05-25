@@ -5,11 +5,21 @@ import time
 import os
 import datetime
 import struct
-from BinaryWriter import generate_binary_header
+from .writer import generate_binary_header
+
 
 class MeasureProcess(multiprocessing.Process):
     __version = "0.5"
-    def __init__(self, sensor, sensor_name, config, frequency, axis, data_dir, chunked=False, chunk_minutes=10):
+
+    def __init__(self,
+                 sensor,
+                 sensor_name,
+                 config,
+                 frequency,
+                 axis,
+                 data_dir,
+                 chunked=False,
+                 chunk_minutes=10):
         multiprocessing.Process.__init__(self)
         self.measurement_name = "unnamed"
         self.sensor = sensor
@@ -25,27 +35,31 @@ class MeasureProcess(multiprocessing.Process):
         self.chunk_minutes = chunk_minutes
         self.exitEvent = multiprocessing.Event()
         self.logger = logging.getLogger("measurement")
-        self.metadata = {"devicename":"Raspberry Pi 2 Model B",
-                         "version": self.__version,
-                         "frequency": self.frequency,
-                         "type": "manual",
-                         "sensors": 1,
-                         "vendor": str(self.sensor.__class__.__name__),
-                         "name": self.sensor_name,
-                         "delay": 0,
-                         "range": 0,
-                         "resolution": 0,
-                         "power": 0}
+        self.metadata = {
+            "devicename": "Raspberry Pi 2 Model B",
+            "version": self.__version,
+            "frequency": self.frequency,
+            "type": "manual",
+            "sensors": 1,
+            "vendor": str(self.sensor.__class__.__name__),
+            "name": self.sensor_name,
+            "delay": 0,
+            "range": 0,
+            "resolution": 0,
+            "power": 0
+        }
         date_float = arrow.utcnow().float_timestamp
         self.units = ['dt64'] + sensor.units(axis)
         self.column_names = ['time'] + self.axis
-        self.file_header = generate_binary_header(date_float, self.metadata, self.fmt, self.units, self.column_names)
+        self.file_header = generate_binary_header(
+            date_float, self.metadata, self.fmt, self.units, self.column_names)
 
     def setMeasurementName(self, measurement_name):
         self.measurement_name = measurement_name
 
     def run(self):
-        self.logger.info("Starting measurement \"{}\"".format(self.measurement_name))
+        self.logger.info(
+            "Starting measurement \"{}\"".format(self.measurement_name))
         # TODO!!!! REIMPLEMENT THIS FEATURE!
         #updateConfigFile("Configuration", "resume", "true")
         start = time.time()
@@ -59,9 +73,12 @@ class MeasureProcess(multiprocessing.Process):
         #sensor.logParameters()
 
         while not self.exitEvent.is_set():
-            endTime = datetime.datetime.now() + datetime.timedelta(minutes=self.chunk_minutes)
+            endTime = datetime.datetime.now() + datetime.timedelta(
+                minutes=self.chunk_minutes)
             filetimestamp = arrow.utcnow().format('YYYY-MM-DD-HH-mm-ss')
-            filename = os.path.join(path, self.measurement_name + "_" + self.sensor_name + "_" + filetimestamp + ".bin")
+            filename = os.path.join(
+                path, self.measurement_name + "_" + self.sensor_name + "_" +
+                filetimestamp + ".bin")
             with open(filename, 'wb') as f:
                 f.write(self.file_header)
                 self.logger.info("Starting file: %s" % filename)
@@ -79,13 +96,16 @@ class MeasureProcess(multiprocessing.Process):
                     # TODO: refactor this abomination!
                     magic = [record[x] for x in self.axis]
                     #data_entry = struct.pack('d' + self.fmt, record.values['time'], *magic)
-                    data_entry = self.struct.pack(timenow.float_timestamp, *magic)
+                    data_entry = self.struct.pack(timenow.float_timestamp,
+                                                  *magic)
 
                     f.write(data_entry)
                     if self.exitEvent.is_set():
-                        self.logger.info("Received exit event. Closing measurement file.")
+                        self.logger.info(
+                            "Received exit event. Closing measurement file.")
                         f.close()
-                        self.logger.info("Disabling resume in configuration file.")
+                        self.logger.info(
+                            "Disabling resume in configuration file.")
                         # TODO: IMPLEMENT THIS FEATURE!!
                         #updateConfigFile("Configuration", "resume", "false")
                         break
