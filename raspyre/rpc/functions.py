@@ -1,4 +1,4 @@
-from .process import MeasureProcess
+from process import MeasureProcess
 from raspyre import sensorbuilder
 import xmlrpclib
 import logging
@@ -7,29 +7,29 @@ import subprocess
 import datetime
 
 
-class RaspyreRPC(object):
+class MeasurementHandler(object):
     def __init__(self, data_directory):
         self.sensors = {}
         self.measurement_processes = {}
         self.data_directory = data_directory
 
     def ping(self):
-        """FIXME! briefly describe function
+        """This function simply returns True.
+        It is used as simple connectivity checking function.
 
-        :returns: 
-        :rtype: 
+        :returns: True
+        :rtype: Boolean
 
         """
         return True
 
-    def startMeasurement(self, measurementname, sensornames=None, delay=0):
-        """FIXME! briefly describe function
+    def startMeasurement(self, measurementname, sensornames=None):
+        """This function starts a measurement process for the specified sensors.
 
-        :param measurementname: 
-        :param sensornames: 
-        :param delay: 
-        :returns: 
-        :rtype: 
+        :param measurementname: String describing the measurement
+        :param sensornames: None [all sensors], String [one specific sensor], List of Strings (optional)
+        :returns: True
+        :rtype: Boolean
 
         """
         sensorlist = []
@@ -54,13 +54,12 @@ class RaspyreRPC(object):
                 self.sensors[sensorname]["measuring"] = True
         return True
 
-    def stopMeasurement(self, sensornames=None, delay=0):
-        """FIXME! briefly describe function
+    def stopMeasurement(self, sensornames=None):
+        """This function stops a currently running measurement.
 
-        :param sensornames: 
-        :param delay: 
-        :returns: 
-        :rtype: 
+        :param sensornames: None [all sensors], String [one specific sensor], List of Strings (optional)
+        :returns: True
+        :rtype: Boolean
 
         """
         sensorlist = []
@@ -97,12 +96,13 @@ class RaspyreRPC(object):
                 self.sensors[sensorname]["measuring"] = False
         return True
 
-    def isMeasuring(self, sensorname=None):
-        """FIXME! briefly describe function
+    def isMeasuring(self, sensorname):
+        """This function returns True if the specified sensor is currently 
+        used by a measurement process.
 
-        :param sensorname: 
-        :returns: 
-        :rtype: 
+        :param sensorname: String of sensor name
+        :returns: True|False
+        :rtype: Boolean
 
         """
         if sensorname not in self.sensors:
@@ -112,10 +112,10 @@ class RaspyreRPC(object):
             return self.sensors[sensorname]["measuring"]
 
     def getFiles(self):
-        """FIXME! briefly describe function
+        """This function lists the filenames in the data directory.
 
-        :returns: 
-        :rtype: 
+        :returns: List of file names
+        :rtype: List of Strings
 
         """
         files = [
@@ -125,30 +125,37 @@ class RaspyreRPC(object):
         return files
 
     def getNetworkNodes(self):
-        """FIXME! briefly describe function
+        """FIXME: This function is not implemented
 
-        :returns: 
-        :rtype: 
+        :returns: empty List
+        :rtype: List
 
         """
         return []
 
     def getSensors(self):
-        """FIXME! briefly describe function
+        """This function returns the internal sensor dictionary.
 
-        :returns: 
-        :rtype: 
+        :returns: Dictionary of current configuration
+        :rtype: Dictionary
 
         """
         return self.sensors
 
     def addSensor(self, sensorname, config={}):
-        """FIXME! briefly describe function
+        """This function adds a sensor to the current setup.
+        Each installed raspyre-sensor-driver package can be used to instantiate
+        a sensor for measurement usage (e.g. raspyre-mpu6050, raspyre-ads1115)
+        Example call:
+        >>> addSensor("S1_left_bridge", config={type="MPU6050", address=0x69})
 
-        :param sensorname: 
-        :param config: 
-        :returns: 
-        :rtype: 
+        :param sensorname: Unique String to identify sensor
+        :param config: Dictionary of sensor configuration data.
+                       A key "type" is used to specify which sensor driver package to load.
+                       The remaining dictionary keys are passed as it to the corresponding
+                       initialization function of the given sensor driver package.
+        :returns: True
+        :rtype: Boolean
 
         """
         if sensorname in self.sensors:
@@ -169,11 +176,11 @@ class RaspyreRPC(object):
         return True
 
     def deleteSensor(self, sensorname):
-        """FIXME! briefly describe function
+        """Removes the sensor specified by its name from the current setup.
 
-        :param sensorname: 
-        :returns: 
-        :rtype: 
+        :param sensorname: String identifying sensor
+        :returns: True
+        :rtype: Boolean
 
         """
         if sensorname not in self.sensors:
@@ -183,12 +190,13 @@ class RaspyreRPC(object):
         return True
 
     def modifySensor(self, sensorname, config):
-        """FIXME! briefly describe function
+        """FIXME: This function updates the configuration of a given sensor.
 
-        :param sensorname: 
-        :param config: 
-        :returns: 
-        :rtype: 
+        :param sensorname: String identifying the sensor
+        :param config: Dictionary of changes configuration parameters.
+                       Each key value pair is passed to the sensor's updateConfiguration()
+        :returns: True
+        :rtype: Boolean
 
         """
         if sensorname not in self.sensors:
@@ -198,20 +206,23 @@ class RaspyreRPC(object):
         return True
 
     def getSystemDate(self):
-        """FIXME! briefly describe function
+        """This function returns a string representation of the current system time.
 
-        :returns: 
-        :rtype: 
+        :returns: String of current datetime
+        :rtype: String
 
         """
         return str(datetime.datetime.now())
 
     def setSystemDate(self, date):
-        """FIXME! briefly describe function
+        """This function sets the current system date.
+        NOTICE: This function does not modify any modified realtime clock!
 
-        :param date: 
-        :returns: 
-        :rtype: 
+        :param date: String of date.
+                     The parameter is passed to the system's date operation thus
+                     accepts its format strings. Please refer to the Linux manpage date(1).
+        :returns: True
+        :rtype: Boolean
 
         """
 
@@ -226,30 +237,30 @@ class RaspyreRPC(object):
         return True
 
     def setExtra(self, extra={}):
-        """FIXME! briefly describe function
+        """This function is reserved for future usage.
 
-        :param extra: 
-        :returns: 
-        :rtype: 
+        :param extra: Dictionary
+        :returns: True
+        :rtype: Boolean
 
         """
         return True
 
     def getExtra(self, extra):
-        """FIXME! briefly describe function
+        """This function is reserved for future usage
 
-        :param extra: 
-        :returns: 
-        :rtype: 
+        :param extra: Dictionary
+        :returns: True
+        :rtype: Boolean
 
         """
         return {}
 
     def clearSensors(self):
-        """FIXME! briefly describe function
+        """This function removes all configured sensors from the current setup.
 
-        :returns: 
-        :rtype: 
+        :returns: True
+        :rtype: Boolean
 
         """
         self.sensors = {}

@@ -1,3 +1,4 @@
+from writer import generate_binary_header
 import multiprocessing
 import logging
 import arrow
@@ -5,7 +6,6 @@ import time
 import os
 import datetime
 import struct
-from .writer import generate_binary_header
 
 
 class MeasureProcess(multiprocessing.Process):

@@ -1,16 +1,18 @@
-from .process import MeasureProcess
-import raspyre.sensorbuilder
+"""Raspyre-RPCServer
+
+This module is used to create a XMLRPC-Server for the Raspyre
+SHM platform.
+
+"""
+from functions import MeasurementHandler
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 from SimpleXMLRPCServer import SimpleXMLRPCRequestHandler
 from SimpleHTTPServer import SimpleHTTPRequestHandler
-
 import xmlrpclib
-import datetime
 import sys
 import os
 import logging
 import logging.config
-import subprocess
 
 
 class VerboseFaultXMLRPCServer(SimpleXMLRPCServer):
@@ -88,7 +90,6 @@ class RequestHandler(SimpleXMLRPCRequestHandler, SimpleHTTPRequestHandler):
         return f
 
 
-
 def handle_exception(exc_type, exc_value, exc_traceback):
     print "handler called"
 
@@ -160,9 +161,9 @@ def rpc_server_main():
     server = VerboseFaultXMLRPCServer(
         ("0.0.0.0", 8000), requestHandler=RequestHandler, allow_none=True)
 
-    raspyre_rpc = RaspyreRPC(data_directory=data_directory)
+    measurement_functions = MeasurementHandler(data_directory=data_directory)
+    server.register_instance(measurement_functions)
     server.register_introspection_functions()
-    server.register_instance(raspyre_rpc)
     server.serve_forever()
 
 
