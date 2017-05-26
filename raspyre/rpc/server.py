@@ -4,6 +4,8 @@ This module is used to create a XMLRPC-Server for the Raspyre
 SHM platform.
 
 """
+from .. import _version
+from . import mplog
 from functions import MeasurementHandler
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 from SimpleXMLRPCServer import SimpleXMLRPCRequestHandler
@@ -13,6 +15,7 @@ import sys
 import os
 import logging
 import logging.config
+import argparse
 
 
 class VerboseFaultXMLRPCServer(SimpleXMLRPCServer):
@@ -91,8 +94,6 @@ class RequestHandler(SimpleXMLRPCRequestHandler, SimpleHTTPRequestHandler):
 
 
 def handle_exception(exc_type, exc_value, exc_traceback):
-    print "handler called"
-
     logger = logging.getLogger(__name__)
 
     if issubclass(exc_type, KeyboardInterrupt):
@@ -102,70 +103,92 @@ def handle_exception(exc_type, exc_value, exc_traceback):
     logger.error(
         "Uncaught exception", exc_info=(exc_type, exc_value, exc_traceback))
 
+def run_rpc_server(datadir, address="0.0.0.0", port=8000, logfile=None, configdir=None, verbose=False):
+    root_logger = logging.getLogger()
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    consolehandler = logging.StreamHandler(stream=sys.stdout)
+    consolehandler.setFormatter(formatter)
+    if verbose:
+        consolehandler.setLevel(logging.DEBUG)
+    else:
+        consolehandler.setLevel(logging.INFO)
+    root_logger.addHandler(consolehandler)
 
-def rpc_server_main():
-    # setup
-    logging_config = {
-        'disable_existing_loggers': False,
-        'formatters': {
-            'extended': {
-                'format':
-                '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-            },
-            'simple': {
-                'format': '%(name)-20s%(levelname)-8s%(message)s'
-            }
-        },
-        'handlers': {
-            'console': {
-                'class': 'logging.StreamHandler',
-                'formatter': 'extended',
-                'level': 'DEBUG',
-                'stream': 'ext://sys.stderr'
-            },
-            'mplog': {
-                'class': 'raspyre_rpcserver.mplog.MultiProcessingLog',
-                'formatter': 'extended',
-                'level': 'INFO',
-                'maxsize': 1024,
-                'mode': 'a',
-                'name': 'rpc_server.log',
-                'rotate': 0
-            }
-        },
-        'root': {
-            'handlers': ['console', 'mplog'],
-            'level': 'DEBUG'
-        },
-        'version': 1
-    }
-
-    if len(sys.argv) < 2:
-        sys.exit('Usage: {} /data/directory/path [/logging/directory]'.format(
-            sys.argv[0]))
-
-    logging_path = '/tmp'
-    if len(sys.argv) == 3:
-        logging_path = sys.argv[2]
-
-    logger = logging.getLogger(__name__)
-    data_directory = os.path.abspath(sys.argv[1])
-    logging_config['handlers']['mplog']['name'] = \
-        os.path.join(logging_path, logging_config['handlers']['mplog']['name'])
-    logging.config.dictConfig(logging_config)
+    if logfile is not None:
+        logfile = os.path.abspath(logfile)
+        mphandler = mplog.MultiProcessingLog(name=logfile, mode='a', maxsize=1024, rotate=0)
+        mphandler.setFormatter(formatter)
+        if verbose:
+            mphandler.setLevel(logging.DEBUG)
+        else:
+            mphandler.setLevel(logging.INFO)
+        root_logger.addHandler(mphandler)
 
     sys.excepthook = handle_exception
 
+    logger = logging.getLogger(__name__)
+    if verbose:
+        logger.setLevel(logging.DEBUG)
+    else:
+        logger.setLevel(logging.INFO)
+
     logger.info("Starting Raspyre RPC Server")
 
-    server = VerboseFaultXMLRPCServer(
-        ("0.0.0.0", 8000), requestHandler=RequestHandler, allow_none=True)
+    logger.debug("Debug information")
 
-    measurement_functions = MeasurementHandler(data_directory=data_directory)
+    server = VerboseFaultXMLRPCServer(
+        (address, port), requestHandler=RequestHandler, allow_none=True)
+
+    measurement_functions = MeasurementHandler(data_directory=datadir)
     server.register_instance(measurement_functions)
     server.register_introspection_functions()
     server.serve_forever()
 
 
+def main():
+    parser = argparse.ArgumentParser()
+    __version__ = _version.get_versions()["version"]
+
+    def storage_path(directory):
+        if not os.path.exists(directory):
+            raise argparse.ArgumentTypeError("Directory not found")
+        if not os.access(directory, os.W_OK):
+            raise argparse.ArgumentTypeError("Directory is not writable")
+        return directory
+
+    parser.add_argument(
+        'datadir', action='store', type=storage_path, help="Data storage directory")
+    parser.add_argument(
+        '--address', '-a', nargs=1, action='store', help='Interface to bind for connections (default 0.0.0.0)', default=["0.0.0.0"])
+    parser.add_argument(
+        '--port', '-p',  nargs=1, action='store', type=int, default=[8000])
+    parser.add_argument(
+        '--logfile', '-l', help='Log file', nargs=1, action='store')
+    parser.add_argument(
+        '--configdir',
+        '-c',
+        help='Directory for configuration files',
+        nargs=1,
+        action='store')
+    parser.add_argument('--verbose', '-v', action='store_true', dest='verbose')
+    parser.add_argument(
+        '--version',
+        action='version',
+        version="%(prog)s {version}".format(version=__version__))
+
+    args = parser.parse_args()
+    args.address = args.address[0]
+    args.configdir = args.configdir[0]
+    args.port = args.port[0]
+    args.logfile = args.logfile[0]
+
+    run_rpc_server(datadir=args.datadir,
+                   address=args.address,
+                   port=args.port,
+                   configdir=args.configdir,
+                   logfile=args.logfile,
+                   verbose=args.verbose)
+
 if __name__ == "__main__":
-    rpc_server_main()
+    main()
+    # rpc_server_main()
