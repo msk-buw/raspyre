@@ -6,7 +6,7 @@ SHM platform.
 """
 from .. import _version
 from . import mplog
-from functions import MeasurementHandler
+from functions import RaspyreService
 from SimpleXMLRPCServer import SimpleXMLRPCServer
 from SimpleXMLRPCServer import SimpleXMLRPCRequestHandler
 from SimpleHTTPServer import SimpleHTTPRequestHandler
@@ -137,10 +137,10 @@ def run_rpc_server(datadir, address="0.0.0.0", port=8000, logfile=None, configdi
     logger.debug("Debug information")
 
     server = VerboseFaultXMLRPCServer(
-        (address, port), requestHandler=RequestHandler, allow_none=True)
+        (address, port), requestHandler=RequestHandler, allow_none=True, logRequests=True)
 
-    measurement_functions = MeasurementHandler(data_directory=datadir)
-    server.register_instance(measurement_functions)
+    raspyreservice = RaspyreService(data_directory=datadir)
+    server.register_instance(raspyreservice)
     server.register_introspection_functions()
     server.serve_forever()
 

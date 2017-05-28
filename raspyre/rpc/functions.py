@@ -1,3 +1,13 @@
+"""This module implements the functions exposed by the Rapsyre RPC interface.
+
+The functions are grouped in classes and should be invoked into different
+prefix namespaces.
+  e.g.:
+  class MeasurementHandler consists of functions to handle the Measurement
+  Processes of the Pi's GPIO interface and should reside in a namespace 
+  that identifies this behaviour as such.
+"""
+
 from process import MeasureProcess
 from raspyre import sensorbuilder
 import xmlrpclib
@@ -7,7 +17,7 @@ import subprocess
 import datetime
 
 
-class MeasurementHandler(object):
+class RaspyreService(object):
     def __init__(self, data_directory):
         self.sensors = {}
         self.measurement_processes = {}
@@ -23,11 +33,13 @@ class MeasurementHandler(object):
         """
         return True
 
-    def startMeasurement(self, measurementname, sensornames=None):
+    def start_measurement(self, measurementname, sensornames=None):
         """This function starts a measurement process for the specified sensors.
 
         :param measurementname: String describing the measurement
-        :param sensornames: None [all sensors], String [one specific sensor], List of Strings (optional)
+        :param sensornames: None [all sensors],
+                            String [one specific sensor],
+                            List of Strings (optional)
         :returns: True
         :rtype: Boolean
 
@@ -54,10 +66,12 @@ class MeasurementHandler(object):
                 self.sensors[sensorname]["measuring"] = True
         return True
 
-    def stopMeasurement(self, sensornames=None):
+    def stop_measurement(self, sensornames=None):
         """This function stops a currently running measurement.
 
-        :param sensornames: None [all sensors], String [one specific sensor], List of Strings (optional)
+        :param sensornames: None [all sensors],
+                            String [one specific sensor],
+                            List of Strings (optional)
         :returns: True
         :rtype: Boolean
 
@@ -96,8 +110,8 @@ class MeasurementHandler(object):
                 self.sensors[sensorname]["measuring"] = False
         return True
 
-    def isMeasuring(self, sensorname):
-        """This function returns True if the specified sensor is currently 
+    def is_measuring(self, sensorname):
+        """This function returns True if the specified sensor is currently
         used by a measurement process.
 
         :param sensorname: String of sensor name
@@ -107,11 +121,12 @@ class MeasurementHandler(object):
         """
         if sensorname not in self.sensors:
             raise xmlrpclib.Fault(
-                1, 'Sensor "{}" is not in the sensorlist'.format(sensorname))
+                1, 'Sensor "{}" is not registered in the sensor list'.format(
+                    sensorname))
         else:
             return self.sensors[sensorname]["measuring"]
 
-    def getFiles(self):
+    def list_files(self):
         """This function lists the filenames in the data directory.
 
         :returns: List of file names
@@ -124,7 +139,7 @@ class MeasurementHandler(object):
         ]
         return files
 
-    def getNetworkNodes(self):
+    def get_network_nodes(self):
         """FIXME: This function is not implemented
 
         :returns: empty List
@@ -133,7 +148,7 @@ class MeasurementHandler(object):
         """
         return []
 
-    def getSensors(self):
+    def get_info(self):
         """This function returns the internal sensor dictionary.
 
         :returns: Dictionary of current configuration
@@ -142,7 +157,7 @@ class MeasurementHandler(object):
         """
         return self.sensors
 
-    def addSensor(self, sensorname, config={}):
+    def add_sensor(self, sensorname, config={}):
         """This function adds a sensor to the current setup.
         Each installed raspyre-sensor-driver package can be used to instantiate
         a sensor for measurement usage (e.g. raspyre-mpu6050, raspyre-ads1115)
@@ -151,9 +166,10 @@ class MeasurementHandler(object):
 
         :param sensorname: Unique String to identify sensor
         :param config: Dictionary of sensor configuration data.
-                       A key "type" is used to specify which sensor driver package to load.
-                       The remaining dictionary keys are passed as it to the corresponding
-                       initialization function of the given sensor driver package.
+                       A key "type" is used to specify which sensor driver
+                       package to load.  The remaining dictionary keys are
+                       passed as it to the corresponding initialization
+                       function of the given sensor driver package.
         :returns: True
         :rtype: Boolean
 
@@ -162,20 +178,24 @@ class MeasurementHandler(object):
             raise xmlrpclib.Fault(
                 1, 'Sensor "{}" already exists!'.format(sensorname))
 
-        sensor = sensorbuilder.createSensor(**config)
-        self.sensors[sensorname] = {
-            "configuration": config,
-            "measuring": False,
-            "stream": "",
-            "sensor": sensor
-        }
-        self.measurement_processes[sensorname] = MeasureProcess(
-            sensor, sensorname, config, config['frequency'], config['axis'],
-            self.data_directory)
+        try:
+            sensor = sensorbuilder.createSensor(**config)
+            self.measurement_processes[sensorname] = MeasureProcess(
+                sensor, sensorname, config, config['frequency'],
+                config['axis'], self.data_directory)
+            self.sensors[sensorname] = {
+                "configuration": config,
+                "measuring": False,
+                "stream": "",
+                "sensor": sensor
+            }
+        except Exception as e:
+            print e
+            raise e
 
         return True
 
-    def deleteSensor(self, sensorname):
+    def remove_sensor(self, sensorname):
         """Removes the sensor specified by its name from the current setup.
 
         :param sensorname: String identifying sensor
@@ -189,12 +209,13 @@ class MeasurementHandler(object):
         del self.sensors[sensorname]
         return True
 
-    def modifySensor(self, sensorname, config):
+    def update_sensor(self, sensorname, config):
         """FIXME: This function updates the configuration of a given sensor.
 
         :param sensorname: String identifying the sensor
         :param config: Dictionary of changes configuration parameters.
-                       Each key value pair is passed to the sensor's updateConfiguration()
+                       Each key value pair is passed to the sensor's
+                       updateConfiguration()
         :returns: True
         :rtype: Boolean
 
@@ -205,7 +226,7 @@ class MeasurementHandler(object):
         self.sensors[sensorname]["config"].update(config)
         return True
 
-    def getSystemDate(self):
+    def get_system_date(self):
         """This function returns a string representation of the current system time.
 
         :returns: String of current datetime
@@ -214,13 +235,14 @@ class MeasurementHandler(object):
         """
         return str(datetime.datetime.now())
 
-    def setSystemDate(self, date):
+    def set_system_date(self, date):
         """This function sets the current system date.
         NOTICE: This function does not modify any modified realtime clock!
 
         :param date: String of date.
-                     The parameter is passed to the system's date operation thus
-                     accepts its format strings. Please refer to the Linux manpage date(1).
+                     The parameter is passed to the system's date operation
+                     thus accepts its format strings. Please refer to the Linux
+                     manual page date(1).
         :returns: True
         :rtype: Boolean
 
@@ -236,7 +258,7 @@ class MeasurementHandler(object):
                 1, "Error during date setting: {}".format(errors))
         return True
 
-    def setExtra(self, extra={}):
+    def set_extra(self, extra={}):
         """This function is reserved for future usage.
 
         :param extra: Dictionary
@@ -246,7 +268,7 @@ class MeasurementHandler(object):
         """
         return True
 
-    def getExtra(self, extra):
+    def get_extra(self, extra):
         """This function is reserved for future usage
 
         :param extra: Dictionary
@@ -256,7 +278,7 @@ class MeasurementHandler(object):
         """
         return {}
 
-    def clearSensors(self):
+    def clear_sensors(self):
         """This function removes all configured sensors from the current setup.
 
         :returns: True
