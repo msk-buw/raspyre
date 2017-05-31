@@ -13,15 +13,24 @@ from raspyre import sensorbuilder
 import xmlrpclib
 import logging
 import os
+import shutil
 import subprocess
 import datetime
 
+class RaspyreDirectoryNotFound(Exception):
+    pass
+
+class RaspyreDirectoryInvalid(Exception):
+    pass
+
+class RaspyreFileInvalid(Exception):
+    pass
 
 class RaspyreService(object):
     def __init__(self, data_directory):
         self.sensors = {}
         self.measurement_processes = {}
-        self.data_directory = data_directory
+        self.data_directory = os.path.normpath(data_directory)
 
     def ping(self):
         """This function simply returns True.
@@ -127,7 +136,9 @@ class RaspyreService(object):
             return self.sensors[sensorname]["measuring"]
 
     def list_files(self):
-        """This function lists the filenames in the data directory.
+        """DEPRECATED! This function lists the filenames in the data directory.
+        ATTENTION: This function is DEPRECATED and will be removed in a later
+        version. Please use fs_ls()
 
         :returns: List of file names
         :rtype: List of Strings
@@ -223,7 +234,7 @@ class RaspyreService(object):
         if sensorname not in self.sensors:
             raise xmlrpclib.Fault(
                 1, 'Sensor "{}" does not exist'.format(sensorname))
-        self.sensors[sensorname]["config"].update(config)
+        self.sensors[sensorname]["configuration"].update(config)
         return True
 
     def get_system_date(self):
@@ -286,4 +297,133 @@ class RaspyreService(object):
 
         """
         self.sensors = {}
+        return True
+
+    def configuration_save(self, sensorname, path):
+        """This function saves the configuration state of a sensor.
+
+        :param sensorname: String of sensor name
+        :param path: Path relative to the configuration directory
+        :returns: True
+        :rtype: Boolean
+
+        """
+        if sensorname not in self.sensors:
+            raise xmlrpclib.Fault(
+                1, 'Sensor "{}" is not registered in the sensor list'.format(
+                    sensorname))
+
+        state = {}
+        state['configuration'] = self.sensors[sensorname].dump()
+        state['frequency'] = self.sensors[sensorname]['configuration']
+        state['axis'] = self.sensors[sensorname]['axis']
+
+    def _sanitize_path(self, root, path):
+        """This function checks if the path is under the root directory.
+
+        :param root: root directory under where the path should reside
+        :param path: path to be checked
+        :returns: normalized path relative to the root directory
+        :rtype: path
+        """
+        request_path = os.path.join(root, path)
+        normalized_path = os.path.normpath(request_path)
+        if not os.path.commonprefix([normalized_path, root]) == root:
+            raise RaspyreDirectoryInvalid("Requested path is not under the data directory")
+        return normalized_path
+
+    def fs_ls(self, path='.'):
+        """This function lists the contents of the data storage directory.
+        It returns a list of 2 lists. The first list contains directories
+        of the queried path, the second list contains the file names.
+
+        :param path: path to be queried relative to the data directory
+        :returns: list of 2 lists with [[directories], [files]]
+        :rtype: list of lists
+
+        """
+        normalized_path = _sanitize_path(self.data_directory, path)
+        if not os.path.exists(normalized_path):
+            raise RaspyreDirectoryNotFound("Requested path was not found")
+        # take one filesystem walk of the top level
+        first_level_walk = os.walk(normalized_path)
+        _, dirnames, filenames = first_level_walk.next()
+        return [dirnames, filenames]
+
+    def fs_mkdir(self, path):
+        """This function creates a directory in the specified path below
+        the data storage directory.
+
+        :param path: Path relative to the data directory
+        :returns: True
+        :rtype: Boolean
+
+        """
+        normalized_path = _sanitize_path(self.data_directory, path)
+        os.mkdir(normalized_path)
+        return True
+
+    def fs_rmdir(self, path, recursive=False):
+        """This function removes a directory relative to the data storage
+
+        :param path: Path relative to the data directory
+                     - not the data directory itself
+        :param recursive: Boolean flag indicating recursive deletion
+        :returns: True
+        :rtype: Boolean
+
+        """
+        normalized_path = _sanitize_path(self.data_directory, path)
+        if normalized_path == os.path.normpath(self.data_directory):
+            raise RaspyreDirectoryInvalid("Cannot delete data directory root.")
+        if not os.path.exists(normalized_path):
+            raise RaspyreDirectoryNotFound("Path is not a directory")
+        if recursive is False:
+            os.rmdir(normalized_path)
+        else:
+            shutil.rmtree(normalized_path)
+
+    def fs_rm(self, path):
+        """This function removes the specified file from the file system.
+
+        :param path: Path relative to the data directory
+        :returns: True
+        :rtype: Boolean
+
+        """
+        normalized_path = _sanitize_path(self.data_directory, path)
+        if not os.path.isfile(normalized_path):
+            raise RaspyreFileInvalid("File does not exist")
+        if os.path.isdir(normalized_path):
+            raise RaspyreFileInvalid("Specified path is a directory, not a file")
+        os.remove(normalized_path)
+        return True
+
+    def fs_mv(self, src, dst):
+        """This function renames src to dst.
+        If dst is a directory an error will be raised. If dst is a file, it will
+        be silently replaced.
+
+        :param src: Path relative to the data directory
+        :param dst: Path relative to the data directory
+        :returns: True
+        :rtype: Boolean
+
+        """
+        normalized_src = _sanitize_path(self.data_directory, src)
+        normalized_dst = _sanitize_path(self.data_directory, dst)
+        os.rename(normalized_src, normalized_dst)
+        return True
+
+    def fs_stat(self, path):
+        """This function returns the POSIX information of a stat system call.
+        Please refer to :python:func:`~os.stat`
+
+        :param path: Path relative to the data directory
+        :returns: True
+        :rtype: Boolean
+
+        """
+        normalized_path = _sanitize_path(self.data_directory, path)
+        os.stat(normalized_path)
         return True
