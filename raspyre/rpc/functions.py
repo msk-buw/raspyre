@@ -16,6 +16,7 @@ import os
 import shutil
 import subprocess
 import datetime
+import json
 
 class RaspyreDirectoryNotFound(Exception):
     pass
@@ -27,10 +28,11 @@ class RaspyreFileInvalid(Exception):
     pass
 
 class RaspyreService(object):
-    def __init__(self, data_directory):
+    def __init__(self, data_directory, configuration_directory):
         self.sensors = {}
         self.measurement_processes = {}
         self.data_directory = os.path.normpath(data_directory)
+        self.configuration_directory = os.path.normpath(configuration_directory)
 
     def ping(self):
         """This function simply returns True.
@@ -168,12 +170,13 @@ class RaspyreService(object):
         """
         return self.sensors
 
-    def add_sensor(self, sensorname, config={}):
+    def add_sensor(self, sensorname, config, frequency, axis):
         """This function adds a sensor to the current setup.
         Each installed raspyre-sensor-driver package can be used to instantiate
         a sensor for measurement usage (e.g. raspyre-mpu6050, raspyre-ads1115)
         Example call:
-        >>> addSensor("S1_left_bridge", config={type="MPU6050", address=0x69})
+        >>> add_sensor("S1_left_bridge", config={type="MPU6050", address=0x69},
+                       frequency=100, axis=['accx', 'accy', 'accz'])
 
         :param sensorname: Unique String to identify sensor
         :param config: Dictionary of sensor configuration data.
@@ -181,6 +184,8 @@ class RaspyreService(object):
                        package to load.  The remaining dictionary keys are
                        passed as it to the corresponding initialization
                        function of the given sensor driver package.
+        :param frequency: Polling frequency for the measurement
+        :param axis: List of parameters to be polled from the sensor
         :returns: True
         :rtype: Boolean
 
@@ -192,10 +197,12 @@ class RaspyreService(object):
         try:
             sensor = sensorbuilder.createSensor(**config)
             self.measurement_processes[sensorname] = MeasureProcess(
-                sensor, sensorname, config, config['frequency'],
-                config['axis'], self.data_directory)
+                sensor, sensorname, config, frequency,
+                axis, self.data_directory)
             self.sensors[sensorname] = {
                 "configuration": config,
+                "frequency": frequency,
+                "axis": axis,
                 "measuring": False,
                 "stream": "",
                 "sensor": sensor
@@ -299,6 +306,20 @@ class RaspyreService(object):
         self.sensors = {}
         return True
 
+    def _sanitize_path(self, root, path):
+        """This function checks if the path is under the root directory.
+
+        :param root: root directory under where the path should reside
+        :param path: path to be checked
+        :returns: normalized path relative to the root directory
+        :rtype: path
+        """
+        request_path = os.path.join(root, path)
+        normalized_path = os.path.normpath(request_path)
+        if not os.path.commonprefix([normalized_path, root]) == root:
+            raise RaspyreDirectoryInvalid("Requested path is not under the data directory")
+        return normalized_path
+
     def configuration_save(self, sensorname, path):
         """This function saves the configuration state of a sensor.
 
@@ -318,19 +339,27 @@ class RaspyreService(object):
         state['frequency'] = self.sensors[sensorname]['configuration']
         state['axis'] = self.sensors[sensorname]['axis']
 
-    def _sanitize_path(self, root, path):
-        """This function checks if the path is under the root directory.
+        filepath = self._sanitize_path(self.configuration_directory, path)
+        with open(filepath, 'w') as fp:
+            json.dump(state, fp)
 
-        :param root: root directory under where the path should reside
-        :param path: path to be checked
-        :returns: normalized path relative to the root directory
-        :rtype: path
+    def configuration_restore(self, sensorname, path):
+        """This function restores a sensor from a given configuration file.
+
+        :param sensorname: Unique String identifying the sensor
+        :param path: File path relative to the configuration_directory
+        :returns: True
+        :rtype: Boolean
+
         """
-        request_path = os.path.join(root, path)
-        normalized_path = os.path.normpath(request_path)
-        if not os.path.commonprefix([normalized_path, root]) == root:
-            raise RaspyreDirectoryInvalid("Requested path is not under the data directory")
-        return normalized_path
+        filepath = self._sanitize_path(self.configuration_directory, path)
+
+        state = None
+        with open(filepath, 'r') as fp:
+            state = json.load(fp)
+        self.add_sensor(sensorname, state['configuration'], state['frequency'],
+                        state['axis'])
+        return True
 
     def fs_ls(self, path='.'):
         """This function lists the contents of the data storage directory.
@@ -342,7 +371,7 @@ class RaspyreService(object):
         :rtype: list of lists
 
         """
-        normalized_path = _sanitize_path(self.data_directory, path)
+        normalized_path = self._sanitize_path(self.data_directory, path)
         if not os.path.exists(normalized_path):
             raise RaspyreDirectoryNotFound("Requested path was not found")
         # take one filesystem walk of the top level
@@ -359,7 +388,7 @@ class RaspyreService(object):
         :rtype: Boolean
 
         """
-        normalized_path = _sanitize_path(self.data_directory, path)
+        normalized_path = self._sanitize_path(self.data_directory, path)
         os.mkdir(normalized_path)
         return True
 
@@ -373,7 +402,7 @@ class RaspyreService(object):
         :rtype: Boolean
 
         """
-        normalized_path = _sanitize_path(self.data_directory, path)
+        normalized_path = self._sanitize_path(self.data_directory, path)
         if normalized_path == os.path.normpath(self.data_directory):
             raise RaspyreDirectoryInvalid("Cannot delete data directory root.")
         if not os.path.exists(normalized_path):
@@ -391,7 +420,7 @@ class RaspyreService(object):
         :rtype: Boolean
 
         """
-        normalized_path = _sanitize_path(self.data_directory, path)
+        normalized_path = self._sanitize_path(self.data_directory, path)
         if not os.path.isfile(normalized_path):
             raise RaspyreFileInvalid("File does not exist")
         if os.path.isdir(normalized_path):
@@ -410,8 +439,8 @@ class RaspyreService(object):
         :rtype: Boolean
 
         """
-        normalized_src = _sanitize_path(self.data_directory, src)
-        normalized_dst = _sanitize_path(self.data_directory, dst)
+        normalized_src = self._sanitize_path(self.data_directory, src)
+        normalized_dst = self._sanitize_path(self.data_directory, dst)
         os.rename(normalized_src, normalized_dst)
         return True
 
@@ -424,6 +453,6 @@ class RaspyreService(object):
         :rtype: Boolean
 
         """
-        normalized_path = _sanitize_path(self.data_directory, path)
+        normalized_path = self._sanitize_path(self.data_directory, path)
         os.stat(normalized_path)
         return True

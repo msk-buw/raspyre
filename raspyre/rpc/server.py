@@ -139,7 +139,8 @@ def run_rpc_server(datadir, address="0.0.0.0", port=8000, logfile=None, configdi
     server = VerboseFaultXMLRPCServer(
         (address, port), requestHandler=RequestHandler, allow_none=True, logRequests=True)
 
-    raspyreservice = RaspyreService(data_directory=datadir)
+    raspyreservice = RaspyreService(data_directory=datadir,
+                                    configuration_directory=configdir)
     server.register_instance(raspyreservice)
     server.register_introspection_functions()
     server.serve_forever()
@@ -169,6 +170,7 @@ def main():
         '-c',
         help='Directory for configuration files',
         nargs=1,
+        type=storage_path,
         action='store')
     parser.add_argument('--verbose', '-v', action='store_true', dest='verbose')
     parser.add_argument(
@@ -178,9 +180,13 @@ def main():
 
     args = parser.parse_args()
     args.address = args.address[0]
-    args.configdir = args.configdir[0]
+    if args.configdir is not None:
+        args.configdir = args.configdir[0]
+    else:
+        args.configdir = args.datadir
     args.port = args.port[0]
     args.logfile = args.logfile[0]
+    print args.configdir
 
     run_rpc_server(datadir=args.datadir,
                    address=args.address,
