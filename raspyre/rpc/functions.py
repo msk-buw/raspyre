@@ -170,7 +170,7 @@ class RaspyreService(object):
         """
         return self.sensors
 
-    def add_sensor(self, sensorname, config, frequency, axis):
+    def add_sensor(self, sensorname, sensor_type, config, frequency, axis):
         """This function adds a sensor to the current setup.
         Each installed raspyre-sensor-driver package can be used to instantiate
         a sensor for measurement usage (e.g. raspyre-mpu6050, raspyre-ads1115)
@@ -195,11 +195,12 @@ class RaspyreService(object):
                 1, 'Sensor "{}" already exists!'.format(sensorname))
 
         try:
-            sensor = sensorbuilder.createSensor(**config)
+            sensor = sensorbuilder.createSensor(sensor_type=sensor_type, **config)
             self.measurement_processes[sensorname] = MeasureProcess(
                 sensor, sensorname, config, frequency,
                 axis, self.data_directory)
             self.sensors[sensorname] = {
+                "sensor_type" : sensor_type,
                 "configuration": config,
                 "frequency": frequency,
                 "axis": axis,
