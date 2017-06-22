@@ -170,20 +170,20 @@ class RaspyreService(object):
         """
         return self.sensors
 
-    def add_sensor(self, sensorname, sensor_type, config, frequency, axis):
+    def add_sensor(self, sensorname, sensortype, config, frequency, axis):
         """This function adds a sensor to the current setup.
         Each installed raspyre-sensor-driver package can be used to instantiate
         a sensor for measurement usage (e.g. raspyre-mpu6050, raspyre-ads1115)
         Example call:
-        >>> add_sensor("S1_left_bridge", config={type="MPU6050", address=0x69},
+        >>> add_sensor(sensorname="S1_left_bridge", sensor_type="MPU6050",
+                       config={address=0x69},
                        frequency=100, axis=['accx', 'accy', 'accz'])
 
         :param sensorname: Unique String to identify sensor
+        :param sensortype: String specifying the sensor driver package
         :param config: Dictionary of sensor configuration data.
-                       A key "type" is used to specify which sensor driver
-                       package to load.  The remaining dictionary keys are
-                       passed as it to the corresponding initialization
-                       function of the given sensor driver package.
+                       The dictionary keys are passed to the initialization 
+                       method of the specified sensor driver package
         :param frequency: Polling frequency for the measurement
         :param axis: List of parameters to be polled from the sensor
         :returns: True
@@ -195,12 +195,12 @@ class RaspyreService(object):
                 1, 'Sensor "{}" already exists!'.format(sensorname))
 
         try:
-            sensor = sensorbuilder.createSensor(sensor_type=sensor_type, **config)
+            sensor = sensorbuilder.createSensor(sensor_type=sensortype, **config)
             self.measurement_processes[sensorname] = MeasureProcess(
                 sensor, sensorname, config, frequency,
                 axis, self.data_directory)
             self.sensors[sensorname] = {
-                "sensor_type" : sensor_type,
+                "sensortype" : sensortype,
                 "configuration": config,
                 "frequency": frequency,
                 "axis": axis,
