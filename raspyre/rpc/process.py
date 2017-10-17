@@ -7,6 +7,8 @@ import os
 import datetime
 import struct
 
+import pyrt
+
 
 class MeasureProcess(multiprocessing.Process):
     __version = "0.5"
@@ -34,7 +36,7 @@ class MeasureProcess(multiprocessing.Process):
         self.chunked = chunked
         self.chunk_minutes = chunk_minutes
         self.exitEvent = multiprocessing.Event()
-        self.logger = logging.getLogger("measurement")
+        self.logger = logging.getLogger(__name__)
         self.metadata = {
             "devicename": "Raspberry Pi 2 Model B",
             "version": self.__version,
@@ -54,10 +56,15 @@ class MeasureProcess(multiprocessing.Process):
         self.file_header = generate_binary_header(
             date_float, self.metadata, self.fmt, self.units, self.column_names)
 
+        self.scheduler = pyrt.Scheduler()
+
     def setMeasurementName(self, measurement_name):
         self.measurement_name = measurement_name
 
     def run(self):
+        self.logger.info("Setting Real Time Process Priority")
+        self.scheduler.set_scheduler(49)
+        self.logger.debug("rt_priority set successfull")
         self.logger.info(
             "Starting measurement \"{}\"".format(self.measurement_name))
         # TODO!!!! REIMPLEMENT THIS FEATURE!
@@ -71,6 +78,10 @@ class MeasureProcess(multiprocessing.Process):
         path = self.data_dir
 
         #sensor.logParameters()
+        rttime = pyrt.Time()
+        rttime.clock_gettime()
+
+        ns_sleep_step = int(self.frequency_step * 1000 * 1000 * 1000)
 
         while not self.exitEvent.is_set():
             endTime = datetime.datetime.now() + datetime.timedelta(
@@ -83,11 +94,17 @@ class MeasureProcess(multiprocessing.Process):
                 f.write(self.file_header)
                 self.logger.info("Starting file: %s" % filename)
                 while True:
-                    next_call = time.time() + self.frequency_step
+                    #next_call = time.time() + self.frequency_step
+
+                    rttime.clock_nanosleep()
+                    rttime.next_shot(ns_sleep_step)
+
                     record = self.sensor.getRecord(*self.axis)
                     #rec.append(pointValue)
-                    count += 1
-                    timenow = arrow.utcnow()
+                    #count += 1
+                    #timenow = arrow.utcnow()
+                    timenow = time.time()
+
                     #self.logger.debug("Fetched value: {}".format(record))
                     #record['time'] = timenow.float_timestamp
                     #print "record"
@@ -96,9 +113,11 @@ class MeasureProcess(multiprocessing.Process):
                     # TODO: refactor this abomination!
                     magic = [record[x] for x in self.axis]
                     #data_entry = struct.pack('d' + self.fmt, record.values['time'], *magic)
-                    data_entry = self.struct.pack(timenow.float_timestamp,
-                                                  *magic)
+                    #data_entry = self.struct.pack(timenow.float_timestamp,
+                    #                              *magic)
 
+                    data_entry = self.struct.pack(timenow, *magic)
+                    
                     f.write(data_entry)
                     if self.exitEvent.is_set():
                         self.logger.info(
@@ -110,13 +129,13 @@ class MeasureProcess(multiprocessing.Process):
                         #updateConfigFile("Configuration", "resume", "false")
                         break
 
-                    if self.chunked and datetime.datetime.now() >= endTime:
-                        f.close()
-                        break
+                    #if self.chunked and datetime.datetime.now() >= endTime:
+                    #    f.close()
+                    #    break
 
-                    sleeptime = next_call - time.time()
-                    if sleeptime > 0:
-                        time.sleep(sleeptime)
+                    #sleeptime = next_call - time.time()
+                    #if sleeptime > 0:
+                    #    time.sleep(sleeptime)
 
     def terminate(self):
         self.logger.info("terminate() called. Setting exit event.")

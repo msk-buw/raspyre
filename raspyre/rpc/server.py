@@ -17,6 +17,7 @@ import logging
 import logging.config
 import argparse
 
+logger = logging.getLogger(__name__)
 
 class VerboseFaultXMLRPCServer(SimpleXMLRPCServer):
     def _marshaled_dispatch(self, data, dispatch_method=None, path=None):
@@ -54,7 +55,7 @@ class VerboseFaultXMLRPCServer(SimpleXMLRPCServer):
                 encoding=self.encoding,
                 allow_none=self.allow_none)
 
-            logger = logging.getLogger(__name__)
+            #logger = logging.getLogger(__name__)
             logger.error(
                 "Dispatch exception", exc_info=(exc_type, exc_value, tb))
         return response
@@ -94,7 +95,7 @@ class RequestHandler(SimpleXMLRPCRequestHandler, SimpleHTTPRequestHandler):
 
 
 def handle_exception(exc_type, exc_value, exc_traceback):
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
 
     if issubclass(exc_type, KeyboardInterrupt):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
@@ -126,15 +127,16 @@ def run_rpc_server(datadir, address="0.0.0.0", port=8000, logfile=None, configdi
 
     sys.excepthook = handle_exception
 
-    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger(__name__)
     if verbose:
         logger.setLevel(logging.DEBUG)
+        root_logger.setLevel(logging.DEBUG)
     else:
         logger.setLevel(logging.INFO)
 
     logger.info("Starting Raspyre RPC Server")
 
-    logger.debug("Debug information")
+    logger.debug("Logging verbose information")
 
     server = VerboseFaultXMLRPCServer(
         (address, port), requestHandler=RequestHandler, allow_none=True, logRequests=True)
