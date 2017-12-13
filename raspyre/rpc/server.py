@@ -188,7 +188,7 @@ def main():
         args.configdir = args.datadir
     args.port = args.port[0]
     args.logfile = args.logfile[0]
-    print args.configdir
+    #print args.configdir
 
     run_rpc_server(datadir=args.datadir,
                    address=args.address,
