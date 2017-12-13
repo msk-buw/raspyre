@@ -2,10 +2,10 @@
 
 The functions are grouped in classes and should be invoked into different
 prefix namespaces.
-  e.g.:
-  class MeasurementHandler consists of functions to handle the Measurement
-  Processes of the Pi's GPIO interface and should reside in a namespace 
-  that identifies this behaviour as such.
+e.g.:
+class MeasurementHandler consists of functions to handle the Measurement
+Processes of the Pi's GPIO interface and should reside in a namespace 
+that identifies this behaviour as such.
 """
 
 from process import MeasureProcess
@@ -18,6 +18,8 @@ import subprocess
 import datetime
 import json
 
+logger = logging.getLogger(__name__)
+
 class RaspyreDirectoryNotFound(Exception):
     pass
 
@@ -27,12 +29,15 @@ class RaspyreDirectoryInvalid(Exception):
 class RaspyreFileInvalid(Exception):
     pass
 
+
+
 class RaspyreService(object):
     def __init__(self, data_directory, configuration_directory):
         self.sensors = {}
         self.measurement_processes = {}
         self.data_directory = os.path.normpath(data_directory)
         self.configuration_directory = os.path.normpath(configuration_directory)
+        logger.debug("Initialized RaspyreService")
 
     def ping(self):
         """This function simply returns True.
@@ -42,6 +47,7 @@ class RaspyreService(object):
         :rtype: Boolean
 
         """
+        logger.debug("ping() called")
         return True
 
     def start_measurement(self, measurementname, sensornames=None):
@@ -55,6 +61,7 @@ class RaspyreService(object):
         :rtype: Boolean
 
         """
+        logger.debug("start_measurement() called")
         sensorlist = []
         if sensornames is None:  # start all sensors
             sensorlist = self.sensors.keys()
@@ -71,9 +78,12 @@ class RaspyreService(object):
                     1,
                     'Sensor "{}" is not in the sensorlist'.format(sensorname))
             else:
+
                 self.measurement_processes[sensorname].setMeasurementName(
                     measurementname)
+                logger.debug("measurement name set")
                 self.measurement_processes[sensorname].start()
+                logger.debug("started measurement process")
                 self.sensors[sensorname]["measuring"] = True
         return True
 
@@ -97,7 +107,7 @@ class RaspyreService(object):
         if not self.sensors:
             raise xmlrpclib.Fault(1, 'No sensors have been configured!')
 
-        logger = logging.getLogger("rpc_server")
+        #logger = logging.getLogger("rpc_server")
         for sensorname in sensorlist:
             if sensorname not in self.sensors:
                 raise xmlrpclib.Fault(
@@ -115,8 +125,8 @@ class RaspyreService(object):
                     self.measurement_processes[sensorname] = MeasureProcess(
                         self.sensors[sensorname]['sensor'], sensorname,
                         self.sensors[sensorname]['configuration'],
-                        self.sensors[sensorname]['configuration']['frequency'],
-                        self.sensors[sensorname]['configuration']['axis'],
+                        self.sensors[sensorname]['frequency'],
+                        self.sensors[sensorname]['axis'],
                         self.data_directory)
                 self.sensors[sensorname]["measuring"] = False
         return True
@@ -175,9 +185,10 @@ class RaspyreService(object):
         Each installed raspyre-sensor-driver package can be used to instantiate
         a sensor for measurement usage (e.g. raspyre-mpu6050, raspyre-ads1115)
         Example call:
-        >>> add_sensor(sensorname="S1_left_bridge", sensor_type="MPU6050",
-                       config={address=0x69},
-                       frequency=100, axis=['accx', 'accy', 'accz'])
+
+        >>> add_sensor(sensorname="S1_left_bridge", sensor_type="MPU6050", 
+                       config={address=0x69}, 
+                       frequency=100, axis=['accx', 'accy', 'accz']) 
 
         :param sensorname: Unique String to identify sensor
         :param sensortype: String specifying the sensor driver package
@@ -447,7 +458,7 @@ class RaspyreService(object):
 
     def fs_stat(self, path):
         """This function returns the POSIX information of a stat system call.
-        Please refer to :python:func:`~os.stat`
+        Please refer to :py:func:`~os.stat`
 
         :param path: Path relative to the data directory
         :returns: True

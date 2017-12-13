@@ -6,18 +6,19 @@ Subpackages
 
 .. toctree::
 
-    raspyre.sensors
+    raspyre.rpc
 
 Submodules
 ----------
 
-.. toctree::
+raspyre\.versioneer module
+--------------------------
 
-   raspyre.helpers
-   raspyre.process_files
-   raspyre.record
-   raspyre.sensor
-   raspyre.sensorbuilder
+.. automodule:: raspyre.versioneer
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 
 Module contents
 ---------------
