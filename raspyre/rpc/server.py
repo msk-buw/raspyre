@@ -6,11 +6,18 @@ SHM platform.
 """
 from .. import _version
 from . import mplog
-from functions import RaspyreService
-from SimpleXMLRPCServer import SimpleXMLRPCServer
-from SimpleXMLRPCServer import SimpleXMLRPCRequestHandler
-from SimpleHTTPServer import SimpleHTTPRequestHandler
-import xmlrpclib
+from .functions import RaspyreService
+import sys
+if sys.version_info > (2, 7):
+    from xmlrpc.server import SimpleXMLRPCServer
+    from xmlrpc.server import SimpleXMLRPCRequestHandler
+    from http.server import SimpleHTTPRequestHandler
+    import xmlrpc.server as xmlrpclib
+else:
+    from SimpleXMLRPCServer import SimpleXMLRPCServer
+    from SimpleXMLRPCServer import SimpleXMLRPCRequestHandler
+    from SimpleHTTPServer import SimpleHTTPRequestHandler
+    import xmlrpclib
 import sys
 import os
 import logging

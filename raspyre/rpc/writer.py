@@ -1,13 +1,15 @@
 import io
 import struct
-import arrow
+#import arrow
+import time
 import csv
 
 MAGIC_ID_BYTES = [0xEB, 0xFF]
 MAJOR_VERSION = 0
 MINOR_VERSION = 4
 
-date_float = arrow.utcnow().float_timestamp
+#date_float = arrow.utcnow().float_timestamp
+date_float = time.time()
 example_metadata = {
     "devicename": "Raspberry Pi 2 Model B",
     "version": "0.5",

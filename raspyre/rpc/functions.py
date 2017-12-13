@@ -8,9 +8,14 @@ Processes of the Pi's GPIO interface and should reside in a namespace
 that identifies this behaviour as such.
 """
 
-from process import MeasureProcess
+from .process import MeasureProcess
 from raspyre import sensorbuilder
-import xmlrpclib
+
+import sys
+if sys.version_info > (2, 7):
+    import xmlrpc.server as xmlrpclib
+else:
+    import xmlrpclib
 import logging
 import os
 import shutil

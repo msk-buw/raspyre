@@ -1,7 +1,7 @@
-from writer import generate_binary_header
+from .writer import generate_binary_header
 import multiprocessing
 import logging
-import arrow
+#import arrow
 import time
 import os
 import datetime
@@ -50,7 +50,8 @@ class MeasureProcess(multiprocessing.Process):
             "resolution": 0,
             "power": 0
         }
-        date_float = arrow.utcnow().float_timestamp
+        #date_float = arrow.utcnow().float_timestamp
+        date_float = time.time()
         self.units = ['dt64'] + sensor.units(axis)
         self.column_names = ['time'] + self.axis
         self.file_header = generate_binary_header(
@@ -72,7 +73,8 @@ class MeasureProcess(multiprocessing.Process):
         start = time.time()
         count = 0
         rec = []
-        filetimestamp = arrow.utcnow().format('YYYY-MM-DD-HH-mm-ss')
+        #filetimestamp = arrow.utcnow().format('YYYY-MM-DD-HH-mm-ss')
+        filetimestamp = time.strftime("%Y-%m-%d-%H-%M-%S")
         #current_dir = os.getcwd()
         #path = os.path.join(current_dir, "rpcdata/")
         path = self.data_dir
