@@ -220,7 +220,7 @@ class RaspyreService(object):
                 "sensor": sensor
             }
         except Exception as e:
-            print e
+            #print e
             raise e
 
         return True
