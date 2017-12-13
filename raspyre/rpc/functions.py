@@ -2,10 +2,10 @@
 
 The functions are grouped in classes and should be invoked into different
 prefix namespaces.
-  e.g.:
-  class MeasurementHandler consists of functions to handle the Measurement
-  Processes of the Pi's GPIO interface and should reside in a namespace 
-  that identifies this behaviour as such.
+e.g.:
+class MeasurementHandler consists of functions to handle the Measurement
+Processes of the Pi's GPIO interface and should reside in a namespace 
+that identifies this behaviour as such.
 """
 
 from process import MeasureProcess
@@ -185,9 +185,10 @@ class RaspyreService(object):
         Each installed raspyre-sensor-driver package can be used to instantiate
         a sensor for measurement usage (e.g. raspyre-mpu6050, raspyre-ads1115)
         Example call:
-        >>> add_sensor(sensorname="S1_left_bridge", sensor_type="MPU6050",
-                       config={address=0x69},
-                       frequency=100, axis=['accx', 'accy', 'accz'])
+
+        >>> add_sensor(sensorname="S1_left_bridge", sensor_type="MPU6050", 
+                       config={address=0x69}, 
+                       frequency=100, axis=['accx', 'accy', 'accz']) 
 
         :param sensorname: Unique String to identify sensor
         :param sensortype: String specifying the sensor driver package
@@ -457,7 +458,7 @@ class RaspyreService(object):
 
     def fs_stat(self, path):
         """This function returns the POSIX information of a stat system call.
-        Please refer to :python:func:`~os.stat`
+        Please refer to :py:func:`~os.stat`
 
         :param path: Path relative to the data directory
         :returns: True

@@ -16,5 +16,4 @@ Contents:
    usage
    modules/modules.rst
    history
-   authors
-   contributing
+
