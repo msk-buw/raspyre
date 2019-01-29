@@ -145,7 +145,9 @@ def run_rpc_server(datadir, address="0.0.0.0", port=8000, logfile=None, configdi
 
     logger.debug("Logging verbose information")
 
-    server = VerboseFaultXMLRPCServer(
+    #server = VerboseFaultXMLRPCServer(
+    #    (address, port), requestHandler=RequestHandler, allow_none=True, logRequests=True)
+    server = SimpleXMLRPCServer(
         (address, port), requestHandler=RequestHandler, allow_none=True, logRequests=True)
 
     raspyreservice = RaspyreService(data_directory=datadir,

@@ -8,7 +8,8 @@ Processes of the Pi's GPIO interface and should reside in a namespace
 that identifies this behaviour as such.
 """
 
-from .process import MeasureProcess
+from .pollingprocess import PollingProcess
+from .handler import HandlerProcess
 from raspyre import sensorbuilder
 
 import sys
@@ -22,6 +23,9 @@ import shutil
 import subprocess
 import datetime
 import json
+import traceback
+import mmap
+
 
 logger = logging.getLogger(__name__)
 
@@ -39,9 +43,12 @@ class RaspyreFileInvalid(Exception):
 class RaspyreService(object):
     def __init__(self, data_directory, configuration_directory):
         self.sensors = {}
-        self.measurement_processes = {}
+        self.polling_processes = {}
+        self.handler_processes = {}
+        self.buffer_size = mmap.PAGESIZE * 1000
         self.data_directory = os.path.normpath(data_directory)
         self.configuration_directory = os.path.normpath(configuration_directory)
+        self.sensor_count = 0
         logger.debug("Initialized RaspyreService")
 
     def ping(self):
@@ -66,30 +73,42 @@ class RaspyreService(object):
         :rtype: Boolean
 
         """
-        logger.debug("start_measurement() called")
-        sensorlist = []
-        if sensornames is None:  # start all sensors
-            sensorlist = self.sensors.keys()
-        elif isinstance(sensornames, (str, unicode)):
-            sensorlist = [sensornames]
-        else:
-            sensorlist = sensornames
-        if not self.sensors:
-            raise xmlrpclib.Fault(1, 'No sensors have been configured!')
-
-        for sensorname in sensorlist:
-            if sensorname not in self.sensors:
-                raise xmlrpclib.Fault(
-                    1,
-                    'Sensor "{}" is not in the sensorlist'.format(sensorname))
+        try:
+            logger.debug("start_measurement() called")
+            sensorlist = []
+            #import pdb; pdb.set_trace()
+            if sensornames is None:  # start all sensors
+                sensorlist = list(self.sensors.keys())
+            elif isinstance(sensornames, str):
+                sensorlist = [sensornames]
             else:
+                sensorlist = sensornames
+            if not self.sensors:
+                raise xmlrpclib.Fault(1, 'No sensors have been configured!')
 
-                self.measurement_processes[sensorname].setMeasurementName(
-                    measurementname)
-                logger.debug("measurement name set")
-                self.measurement_processes[sensorname].start()
-                logger.debug("started measurement process")
-                self.sensors[sensorname]["measuring"] = True
+            logger.debug("Trying to start measurement.")
+
+            for sensorname in sensorlist:
+                if sensorname not in self.sensors:
+                    raise xmlrpclib.Fault(
+                        1,
+                        'Sensor "{}" is not in the sensorlist'.format(sensorname))
+                else:
+
+                    #self.polling_processes[sensorname].setMeasurementName(
+                    #    measurementname)
+                    self.handler_processes[sensorname].setMeasurementName(measurementname)
+                    logger.debug("measurement name set")
+                    self.polling_processes[sensorname].start()
+                    logger.debug("started polling process")
+                    self.handler_processes[sensorname].start()
+                    logger.debug("started handler process")
+                    self.sensors[sensorname]["measuring"] = True
+        except Exception as e:
+            logger.error("Exception occured during start_measurement()")
+            logger.error("Traceback:")
+            logger.error(traceback.format_exc())
+            return False
         return True
 
     def stop_measurement(self, sensornames=None):
@@ -102,38 +121,69 @@ class RaspyreService(object):
         :rtype: Boolean
 
         """
-        sensorlist = []
-        if sensornames is None:  # start all sensors
-            sensorlist = self.sensors.keys()
-        elif isinstance(sensornames, (str, unicode)):
-            sensorlist = [sensornames]
-        else:
-            sensorlist = sensornames
-        if not self.sensors:
-            raise xmlrpclib.Fault(1, 'No sensors have been configured!')
-
-        #logger = logging.getLogger("rpc_server")
-        for sensorname in sensorlist:
-            if sensorname not in self.sensors:
-                raise xmlrpclib.Fault(
-                    1,
-                    'Sensor "{}" is not in the sensorlist'.format(sensorname))
+        #import pdb; pdb.set_trace()
+        try:
+            sensorlist = []
+            if sensornames is None:  # start all sensors
+                sensorlist = list(self.sensors.keys())
+            elif isinstance(sensornames, str):
+                sensorlist = [sensornames]
             else:
-                # TODO stop measurement
-                logger.info(
-                    "Shutting down measurement subprocess with sensor \"{}\"".
-                    format(sensorname))
-                if self.measurement_processes[sensorname].is_alive():
-                    self.measurement_processes[sensorname].terminate()
-                    self.measurement_processes[sensorname].join()
-                    self.measurement_processes[sensorname] = 0
-                    self.measurement_processes[sensorname] = MeasureProcess(
-                        self.sensors[sensorname]['sensor'], sensorname,
-                        self.sensors[sensorname]['configuration'],
-                        self.sensors[sensorname]['frequency'],
-                        self.sensors[sensorname]['axis'],
-                        self.data_directory)
-                self.sensors[sensorname]["measuring"] = False
+                sensorlist = sensornames
+            if not self.sensors:
+                raise xmlrpclib.Fault(1, 'No sensors have been configured!')
+
+            #logger = logging.getLogger("rpc_server")
+            for sensorname in sensorlist:
+                if sensorname not in self.sensors:
+                    raise xmlrpclib.Fault(
+                        1,
+                        'Sensor "{}" is not in the sensorlist'.format(sensorname))
+                else:
+                    # TODO stop measurement
+                    logger.info(
+                        "Shutting down measurement subprocess with sensor \"{}\"".
+                        format(sensorname))
+                    if self.handler_processes[sensorname].is_alive():
+                        self.handler_processes[sensorname].terminate()
+                        self.handler_processes[sensorname].join()
+                        self.sensor_count -= 1
+                        self.handler_processes[sensorname] = 0
+
+                    if self.polling_processes[sensorname].is_alive():
+                        self.polling_processes[sensorname].terminate()
+                        self.polling_processes[sensorname].join()
+                        self.polling_processes[sensorname] = 0
+
+                        mmap_file = '/dev/shm/raspyre_buf' + str(self.sensor_count)
+                        self.polling_processes[sensorname] = PollingProcess(
+                            sensor=self.sensors[sensorname]['sensor'],
+                            sensor_name=sensorname,
+                            config=self.sensors[sensorname]['configuration'],
+                            frequency=self.sensors[sensorname]['frequency'],
+                            axis=self.sensors[sensorname]['axis'],
+                            data_dir=self.data_directory,
+                            mmap_file=mmap_file,
+                            buffer_size=self.buffer_size)
+                        self.handler_processes[sensorname] = HandlerProcess(
+                            sensor=self.sensors[sensorname]['sensor'],
+                            sensor_name=sensorname,
+                            config=self.sensors[sensorname]['configuration'],
+                            frequency=self.sensors[sensorname]['frequency'],
+                            axis=self.sensors[sensorname]['axis'],
+                            data_dir=self.data_directory,
+                            mmap_file=mmap_file,
+                            buffer_size=self.buffer_size,
+                        )
+
+                    self.sensors[sensorname]["measuring"] = False
+
+        except Exception as e:
+            logger.error("Exception occured during start_measurement()")
+            logger.error("Traceback:")
+            logger.error(traceback.format_exc())
+            return False
+        return True
         return True
 
     def is_measuring(self, sensorname):
@@ -206,26 +256,56 @@ class RaspyreService(object):
         :rtype: Boolean
 
         """
+
+        logger.debug('add_sensor() called')
         if sensorname in self.sensors:
+            logger.error('Sensor "{}" already exists.'.format(sensorname))
             raise xmlrpclib.Fault(
                 1, 'Sensor "{}" already exists!'.format(sensorname))
 
         try:
             sensor = sensorbuilder.createSensor(sensor_type=sensortype, **config)
-            self.measurement_processes[sensorname] = MeasureProcess(
-                sensor, sensorname, config, frequency,
-                axis, self.data_directory)
+            logger.debug("Successfully instantiated sensor")
+
+            mmap_file = '/dev/shm/raspyre_buf' + str(self.sensor_count)
+            self.polling_processes[sensorname] = PollingProcess(
+                sensor=sensor,
+                sensor_name=sensorname,
+                config=config,
+                frequency=frequency,
+                axis=axis,
+                data_dir=self.data_directory,
+                mmap_file=mmap_file,
+                buffer_size=self.buffer_size)
+            self.handler_processes[sensorname] = HandlerProcess(
+                sensor=sensor,
+                sensor_name=sensorname,
+                config=config,
+                frequency=frequency,
+                axis=axis,
+                data_dir=self.data_directory,
+                mmap_file=mmap_file,
+                buffer_size=self.buffer_size,
+            )
             self.sensors[sensorname] = {
-                "sensortype" : sensortype,
+                "sensortype": sensortype,
                 "configuration": config,
                 "frequency": frequency,
                 "axis": axis,
                 "measuring": False,
                 "stream": "",
-                "sensor": sensor
+                "sensor": sensor,
+                "mmap_file": mmap_file
             }
+            self.sensor_count += 1
+            logger.debug("Successfully instantiated polling process")
+            
         except Exception as e:
             #print e
+            logger.error("Exception occured during add_sensor()")
+            logger.error(e)
+            logger.error("Traceback:")
+            logger.error(traceback.format_exc())
             raise e
 
         return True
@@ -393,7 +473,7 @@ class RaspyreService(object):
             raise RaspyreDirectoryNotFound("Requested path was not found")
         # take one filesystem walk of the top level
         first_level_walk = os.walk(normalized_path)
-        _, dirnames, filenames = first_level_walk.next()
+        _, dirnames, filenames = next(first_level_walk)
         return [dirnames, filenames]
 
     def fs_mkdir(self, path):

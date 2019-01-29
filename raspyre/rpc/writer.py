@@ -4,7 +4,7 @@ import struct
 import time
 import csv
 
-MAGIC_ID_BYTES = [0xEB, 0xFF]
+MAGIC_ID_BYTES = b'\xEB\xFF'
 MAJOR_VERSION = 0
 MINOR_VERSION = 4
 
@@ -36,9 +36,10 @@ def generate_binary_header(date_float, metadata, fmt, units, column_names):
     byte_buffer.write(struct.pack('2B', MAJOR_VERSION, MINOR_VERSION))
     byte_buffer.write(struct.pack('d', date_float))
 
-    metadatastring = io.BytesIO()
+    metadatastring = io.StringIO()
     metadatawriter = csv.writer(metadatastring, delimiter=' ')
-    for key, value in metadata.items():
+    for key, value in list(metadata.items()):
+        #metadatawriter.writerow(bytes(key, 'utf-8'), bytes(value, 'utf-8'))
         metadatawriter.writerow([key, value])
     metadatasize = len(metadatastring.getvalue())
 
@@ -64,16 +65,16 @@ def generate_binary_header(date_float, metadata, fmt, units, column_names):
     byte_buffer.write(struct.pack('i', column_names_size))
 
     # write actual metadatastring
-    byte_buffer.write(metadatastring.getvalue())
+    byte_buffer.write(bytes(metadatastring.getvalue(), 'utf-8'))
 
     # write fmt
-    byte_buffer.write(fmt)
+    byte_buffer.write(bytes(fmt, 'utf-8'))
 
     # write units_line
-    byte_buffer.write(units_line)
+    byte_buffer.write(bytes(units_line, 'utf-8'))
 
     # write column names
-    byte_buffer.write(column_names_line)
+    byte_buffer.write(bytes(column_names_line, 'utf-8'))
 
     # header finished
 
