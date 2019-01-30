@@ -32,7 +32,7 @@ SCHED_FIFO = ctypes.c_int(1)
 
 class PollingProcess(multiprocessing.Process):
     __version = "1.3"
-    PROCESS_PRIORITY = 49
+    PROCESS_PRIORITY = 90
 
     def __init__(self,
                  sensor,
@@ -124,14 +124,20 @@ class PollingProcess(multiprocessing.Process):
         delay = int(self.frequency_step * s_nsec)
         counter = 0
 
+        #self.logger.debug("Touching every memory page from shared memory buffer")
+        #for i in range(0, self.buffer_size):
+        #    self.buf[i] = 255
+        #    self.buf[i] = 0
+
         self.logger.debug("Disabling garbage collection for polling process")
         gc.disable()
+
         self.logger.debug("Locking memory pages for polling process")
         ret = librt.mlockall(MCL_CURRENT.value | MCL_FUTURE.value)
+        self.logger.debug("mlockall() returned {}".format(ret))
         if ret == -1:
             self.logger.error("Error during mlockall()! Check user/process rights.")
             return
-
 
         self.logger.info(
             "Starting measurement \"{}\"".format(self.measurement_name))
@@ -227,6 +233,6 @@ class PollingProcess(multiprocessing.Process):
             ##    time.sleep(sleeptime)
             
 
-    def terminate(self):
-        self.logger.info("terminate() called. Setting exit event.")
+    def shutdown(self):
+        self.logger.info("shutdown() called. Setting exit event.")
         self.exitEvent.set()

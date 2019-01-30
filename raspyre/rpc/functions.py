@@ -45,11 +45,13 @@ class RaspyreFileInvalid(Exception):
 
 
 class RaspyreService(object):
+    PROCESS_TIMEOUT = 3
+
     def __init__(self, data_directory, configuration_directory):
         self.sensors = {}
         self.polling_processes = {}
         self.handler_processes = {}
-        self.buffer_size = mmap.PAGESIZE * 1000
+        self.buffer_size = mmap.PAGESIZE * 100
         self.data_directory = os.path.normpath(data_directory)
         self.configuration_directory = os.path.normpath(configuration_directory)
         self.sensor_count = 0
@@ -82,7 +84,7 @@ class RaspyreService(object):
         logger.debug("stop_blink() called")
         if self.blink_process is not None:
             self.blink_process.terminate()
-            self.blink_process.join()
+            self.blink_process.join(self.PROCESS_TIMEOUT)
             self.blink_process = None
             return True
         else:
@@ -223,16 +225,22 @@ class RaspyreService(object):
                     logger.info(
                         "Shutting down measurement subprocess with sensor \"{}\"".
                         format(sensorname))
+                    logger.debug("terminating handler process")
                     if self.handler_processes[sensorname].is_alive():
+                        self.handler_processes[sensorname].shutdown()
+                        self.handler_processes[sensorname].join(self.PROCESS_TIMEOUT)
                         self.handler_processes[sensorname].terminate()
-                        self.handler_processes[sensorname].join()
                         self.sensor_count -= 1
                         self.handler_processes[sensorname] = 0
 
+                    logger.debug("terminating polling process")
                     if self.polling_processes[sensorname].is_alive():
+                        self.polling_processes[sensorname].shutdown()
+                        self.polling_processes[sensorname].join(self.PROCESS_TIMEOUT)
                         self.polling_processes[sensorname].terminate()
-                        self.polling_processes[sensorname].join()
-                        self.polling_processes[sensorname] = 0
+                        self.polling_processes[sensorname] = -1
+
+                        logger.debug("subprocesses successfully terminated")
 
                         mmap_file = '/dev/shm/raspyre_buf' + str(self.sensor_count)
                         self.polling_processes[sensorname] = PollingProcess(
