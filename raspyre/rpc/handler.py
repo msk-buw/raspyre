@@ -60,6 +60,7 @@ class HandlerProcess(multiprocessing.Process):
         date_float = time.time()
         self.file_header = generate_binary_header(
             date_float, self.metadata, self.fmt, self.units, self.column_names)
+        self.nodename = os.uname().nodename
 
         self.mmap_file = mmap_file
         self.buffer_size = buffer_size
@@ -76,34 +77,54 @@ class HandlerProcess(multiprocessing.Process):
 
     def run(self):
         filetimestamp = time.strftime('%Y-%m-%d-%H-%M-%S')
-        filename = "_".join((self.measurement_name, self.sensor_name, filetimestamp)) + '.csv'
-        filename = os.path.join('.', filename)
 
+        #filename = "_".join((self.measurement_name, self.sensor_name, filetimestamp)) + '.csv'
+        filename = self.nodename + '_' + self.measurement_name + '_' + self.sensor_name + ' ' + filetimestamp + '.bin'
+        filename = os.path.join(self.data_dir, filename)
+
+        old_index = 0
         self.logger.debug("Entering handler loop")
         while not self.exitEvent.is_set():
-            old_index = 0
-            with open(filename, 'w') as f:
+            with open(filename, 'wb') as f:
+                f.write(self.file_header)
+                self.logger.info("Starting file \"{}\"".format(filename))
                 while True:
                     index = struct.unpack('i', self.buf[0:4])[0]
-                    #self.logger.debug("Index: {}".format(index))
                     if old_index > index:
-                        self.logger.debug("index overrun, processing till ring size")
-                        for i in range(old_index, self.ring_size):
-                            offset = self.start_offset + i * self.data_size
-                            values = struct.unpack(self.fmt, self.buf[offset:offset+self.data_size])
-                            f.write("%f %f %f %f\n" % (values[0], values[1], values[2], values[3]))
+                        buffer_range = range(old_index, self.ring_size)
                         old_index = 0
                     elif index > old_index:
-                        for i in range(old_index, index + 1):
-                            offset = self.start_offset + i * self.data_size
-                            values = struct.unpack(self.fmt, self.buf[offset:offset+self.data_size])
-                            f.write("%f %f %f %f\n" % (values[0], values[1], values[2], values[3]))
+                        buffer_range = range(old_index, index+1)
                         old_index = index + 1
-
-                    time.sleep(0.5)
-                    if(self.exitEvent.is_set()):
+                    # process buffer slice
+                    for i in buffer_range:
+                        offset = self.start_offset + i * self.data_size
+                        sample = self.buf[offset:offset+self.data_size]
+                        f.write(sample)
+                    if self.exitEvent.is_set():
                         break
-                f.flush()
+                    time.sleep(0.5)
+                #self.logger.debug("index overrun, processing till ring size")
+                #for i in range(old_index, self.ring_size):
+                #    offset = self.start_offset + i * self.data_size
+                #    values = struct.unpack(self.fmt, self.buf[offset:offset+self.data_size])
+                #    f.write("%f %f %f %f\n" % (values[0], values[1], values[2], values[3]))
+                #old_index = 0
+                #elif index > old_index:
+                #for i in range(old_index, index + 1):
+                #    offset = self.start_offset + i * self.data_size
+                #    values = struct.unpack(self.fmt, self.buf[offset:offset+self.data_size])
+                #    f.write("%f %f %f %f\n" % (values[0], values[1], values[2], values[3]))
+                #old_index = index + 1
+
+            #with open(filename, 'w') as f:
+                #while True:
+                    ##self.logger.debug("Index: {}".format(index))
+#
+                    #time.sleep(0.5)
+                    #if(self.exitEvent.is_set()):
+                        #break
+                #f.flush()
 
     def shutdown(self):
         self.logger.debug("shutdown() called")
