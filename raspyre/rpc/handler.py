@@ -8,6 +8,7 @@ import struct
 import sys
 import mmap
 import ctypes
+import zmq
 
 
 class HandlerProcess(multiprocessing.Process):
@@ -76,6 +77,14 @@ class HandlerProcess(multiprocessing.Process):
         self.measurement_name = measurement_name
 
     def run(self):
+        self.logger.debug("Setting up zmq context")
+        self.context = zmq.Context()
+        self.logger.debug("Setting up zmq socket")
+        self.socket = self.context.socket(zmq.PUB)
+        self.logger.debug("Binding zmq socket to port 5556")
+        self.socket.bind('tcp://*:%s' % '5556')
+
+
         filetimestamp = time.strftime('%Y-%m-%d-%H-%M-%S')
 
         #filename = "_".join((self.measurement_name, self.sensor_name, filetimestamp)) + '.csv'
@@ -102,9 +111,10 @@ class HandlerProcess(multiprocessing.Process):
                         offset = self.start_offset + i * self.data_size
                         sample = self.buf[offset:offset+self.data_size]
                         f.write(sample)
+                        self.socket.send(sample)
                     if self.exitEvent.is_set():
                         break
-                    time.sleep(0.5)
+                    time.sleep(0.02)
                 #self.logger.debug("index overrun, processing till ring size")
                 #for i in range(old_index, self.ring_size):
                 #    offset = self.start_offset + i * self.data_size
