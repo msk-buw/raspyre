@@ -90,6 +90,7 @@ class HandlerProcess(multiprocessing.Process):
                 self.logger.info("Starting file \"{}\"".format(filename))
                 while True:
                     index = struct.unpack('i', self.buf[0:4])[0]
+                    buffer_range = range(0)
                     if old_index > index:
                         buffer_range = range(old_index, self.ring_size)
                         old_index = 0

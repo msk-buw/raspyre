@@ -58,29 +58,29 @@ class PollingProcess(multiprocessing.Process):
         self.axis = axis
         self.fmt = "d" + "".join(sensor.struct_fmt(axis))
         self.struct = struct.Struct(self.fmt)
-        self.data_dir = data_dir
-        self.chunked = chunked
-        self.chunk_minutes = chunk_minutes
+        #self.data_dir = data_dir
+        #self.chunked = chunked
+        #self.chunk_minutes = chunk_minutes
         self.exitEvent = multiprocessing.Event()
-        self.metadata = {
-            "devicename": "Raspberry Pi 3 Model B+",
-            "version": self.__version,
-            "frequency": self.frequency,
-            "type": "manual",
-            "sensors": 1,
-            "vendor": str(self.sensor.__class__.__name__),
-            "name": self.sensor_name,
-            "delay": 0,
-            "range": 0,
-            "resolution": 0,
-            "power": 0
-        }
+        #self.metadata = {
+        #    "devicename": "Raspberry Pi 3 Model B+",
+        #    "version": self.__version,
+        #    "frequency": self.frequency,
+        #    "type": "manual",
+        #    "sensors": 1,
+        #    "vendor": str(self.sensor.__class__.__name__),
+        #    "name": self.sensor_name,
+        #    "delay": 0,
+        #    "range": 0,
+        #    "resolution": 0,
+        #    "power": 0
+        #}
         #date_float = arrow.utcnow().float_timestamp
-        date_float = time.time()
-        self.units = ['dt64'] + sensor.units(axis)
-        self.column_names = ['time'] + self.axis
-        self.file_header = generate_binary_header(
-            date_float, self.metadata, self.fmt, self.units, self.column_names)
+        #date_float = time.time()
+        #self.units = ['dt64'] + sensor.units(axis)
+        #self.column_names = ['time'] + self.axis
+        #self.file_header = generate_binary_header(
+        #    date_float, self.metadata, self.fmt, self.units, self.column_names)
 
         self.logger.debug("Preparing rt capabilities")
         #self.scheduler = pyrt.Scheduler()
@@ -140,7 +140,7 @@ class PollingProcess(multiprocessing.Process):
             return
 
         self.logger.info(
-            "Starting measurement \"{}\"".format(self.measurement_name))
+            "Starting polling loop for sensor \"{}\"".format(self.sensor_name))
         librt.clock_gettime(CLOCK_MONOTONIC, ctypes.byref(deadline))
 
 
