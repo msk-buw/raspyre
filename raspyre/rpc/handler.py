@@ -79,7 +79,7 @@ class HandlerProcess(multiprocessing.Process):
         filetimestamp = time.strftime('%Y-%m-%d-%H-%M-%S')
 
         #filename = "_".join((self.measurement_name, self.sensor_name, filetimestamp)) + '.csv'
-        filename = self.nodename + '_' + self.measurement_name + '_' + self.sensor_name + ' ' + filetimestamp + '.bin'
+        filename = self.nodename + '_' + self.measurement_name + '_' + self.sensor_name + '_' + filetimestamp + '.bin'
         filename = os.path.join(self.data_dir, filename)
 
         old_index = 0
