@@ -28,10 +28,35 @@ import json
 import traceback
 import mmap
 
+import socket
+import fcntl
+import struct
+
 
 import python_hosts
 
 logger = logging.getLogger(__name__)
+
+import socket
+import fcntl
+import struct
+
+class IPContextFilter(logging.Filter):
+    def __init__(self):
+        self.ip_address = get_ip_address('mesh0')
+
+    def filter(self, record):
+        record.ip = self.ip_address
+        return True
+
+def get_ip_address(ifname):
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    return socket.inet_ntoa(fcntl.ioctl(
+        s.fileno(),
+        0x8915,  # SIOCGIFADDR
+        struct.pack('256s', bytes(ifname[:15], 'utf-8'))
+    )[20:24])
+
 
 class RaspyreDirectoryNotFound(Exception):
     pass
@@ -643,9 +668,13 @@ class RaspyreService(object):
 
     def set_network_logger(self, host, loglevel=logging.DEBUG):
         rootLogger = logging.getLogger('')
+        f = IPContextFilter()
+        #rootLogger.addFilter(f)
+        #logger.addFilter(f)
         rootLogger.setLevel(loglevel)
         socketHandler = logging.handlers.SocketHandler(host,
                 logging.handlers.DEFAULT_TCP_LOGGING_PORT)
+        socketHandler.addFilter(f)
         rootLogger.addHandler(socketHandler)
         logger.debug("Set up network logging handler successfull to host {}".format(host))
 
@@ -659,3 +688,5 @@ class RaspyreService(object):
         logger.error("test error log msg")
 
         return True
+
+
