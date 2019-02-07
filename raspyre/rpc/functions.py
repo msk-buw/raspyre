@@ -655,7 +655,7 @@ class RaspyreService(object):
         logger.debug("test debug log msg")
         logger.info("test info log msg")
         logger.warn("test warn log msg")
-        logger.crititcal("test critical log msg")
+        logger.critical("test critical log msg")
         logger.error("test error log msg")
 
         return True
