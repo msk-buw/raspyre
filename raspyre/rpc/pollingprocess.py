@@ -161,7 +161,10 @@ class PollingProcess(multiprocessing.Process):
                 deadline.tv_nsec -= s_nsec
                 deadline.tv_sec += 1
             ret = librt.clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, ctypes.byref(deadline), 0)
-            record = self.sensor.getRecord(*self.axis)
+            try:
+                record = self.sensor.getRecord(*self.axis)
+            except Exception as e:
+                self.logger.error("Fatal error during sensor.getRecord()", exc_info=True)
             data = struct.pack(self.fmt, record.values['time'], *[record[x] for x in self.axis])
             offset = self.start_offset + counter % self.ring_size * self.data_size
             self.buf.seek(offset)

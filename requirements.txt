@@ -1,3 +1,5 @@
 raspyre
-arrow
 pyyaml
+pyzmq
+multiprocessing-logging
+python-hosts

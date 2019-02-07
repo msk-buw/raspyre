@@ -640,3 +640,22 @@ class RaspyreService(object):
         normalized_path = self._sanitize_path(self.data_directory, path)
         os.stat(normalized_path)
         return True
+
+    def set_network_logger(self, host, loglevel=logging.DEBUG):
+        rootLogger = logging.getLogger('')
+        rootLogger.setLevel(loglevel)
+        socketHandler = logging.handlers.SocketHandler(host,
+                logging.handlers.DEFAULT_TCP_LOGGING_PORT)
+        rootLogger.addHandler(socketHandler)
+        logger.debug("Set up network logging handler successfull to host {}".format(host))
+
+        return True
+
+    def debug_log_msg(self):
+        logger.debug("test debug log msg")
+        logger.info("test info log msg")
+        logger.warn("test warn log msg")
+        logger.crititcal("test critical log msg")
+        logger.error("test error log msg")
+
+        return True
