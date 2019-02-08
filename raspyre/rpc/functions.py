@@ -430,10 +430,16 @@ class RaspyreService(object):
         :rtype: Boolean
 
         """
+        if sensorname is None:
+            self.sensors = {}
+            self.polling_processes = {}
+            self.handler_processes = {}
         if sensorname not in self.sensors:
             raise xmlrpclib.Fault(
                 1, 'Sensor "{}" does not exist'.format(sensorname))
         del self.sensors[sensorname]
+        del self.polling_processes[sensorname]
+        del self.handler_processes[sensorname]
         return True
 
     def update_sensor(self, sensorname, config):
