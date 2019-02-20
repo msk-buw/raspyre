@@ -34,6 +34,7 @@ import struct
 
 
 import python_hosts
+import netifaces
 
 logger = logging.getLogger(__name__)
 
@@ -80,8 +81,14 @@ class RaspyreService(object):
         self.data_directory = os.path.normpath(data_directory)
         self.configuration_directory = os.path.normpath(configuration_directory)
         self.sensor_count = 0
+        
+        self.is_ntp_master = False
 
         self.blink_process = None
+        self.is_blinking = False
+
+        self.socketHandler = None
+        
         logger.debug("Initialized RaspyreService")
 
     def ping(self):
@@ -98,6 +105,7 @@ class RaspyreService(object):
 
     def start_blink(self):
         logger.debug("start_blink() called")
+        self.is_blinking = True
         if self.blink_process is None:
             self.blink_process = BlinkProcess()
             self.blink_process.start()
@@ -107,6 +115,7 @@ class RaspyreService(object):
 
     def stop_blink(self):
         logger.debug("stop_blink() called")
+        self.is_blinking = False
         if self.blink_process is not None:
             self.blink_process.terminate()
             self.blink_process.join(self.PROCESS_TIMEOUT)
@@ -114,6 +123,13 @@ class RaspyreService(object):
             return True
         else:
             return False
+
+    def toggle_blink(self):
+        if not self.is_blinking:
+            self.start_blink()
+        else:
+            self.stop_blink()
+        return True
 
     def start_ntp(self):
         #rt = os.system('sudo systemctl start ntp.service &')
@@ -143,6 +159,7 @@ class RaspyreService(object):
             ntpfile.write('restrict -4 default kod notrap nomodify nopeer noquery\n')
             ntpfile.write('restrict 10.0.0.0 mask 255.0.0.0 nomodify notrap\n')
             ntpfile.write('restrict 127.0.0.1\n')
+        self.is_ntp_master = False
         return True
 
     def ntp_master(self):
@@ -157,6 +174,7 @@ class RaspyreService(object):
             ntpfile.write('restrict -4 default kod notrap nomodify nopeer noquery\n')
             ntpfile.write('restrict 10.0.0.0 mask 255.0.0.0 nomodify notrap\n')
             ntpfile.write('restrict 127.0.0.1\n')
+        self.is_ntp_master = True
         return True
 
     def get_dns_info(self):
@@ -337,6 +355,22 @@ class RaspyreService(object):
 
         """
         return []
+
+    def get_status(self):
+        # collect status information about this node
+        is_portal = False
+        if 'ap0' in netifaces.interfaces():
+            is_portal = True
+        is_ntp_master = self.is_ntp_master
+        sensors = {}
+        for sensorname, sensor in self.sensors.items():
+            # extract relevant information out of sensor dictionary
+            sensors[sensorname] = {k : sensor[k] for k in ('sensortype', 'configuration', 'frequency', 'axis', 'measuring')}
+        ret =  {"is_portal":is_portal,
+                "is_ntp_master":is_ntp_master,
+                "sensors":sensors}
+        return ret
+        
 
     def get_info(self):
         """This function returns the internal sensor dictionary.
@@ -678,10 +712,15 @@ class RaspyreService(object):
         #rootLogger.addFilter(f)
         #logger.addFilter(f)
         rootLogger.setLevel(loglevel)
-        socketHandler = logging.handlers.SocketHandler(host,
+
+        # remove previously configured socket handler
+        if self.socketHandler is not None:
+            rootLogger.removeHandler(self.socketHandler)
+
+        self.socketHandler = logging.handlers.SocketHandler(host,
                 logging.handlers.DEFAULT_TCP_LOGGING_PORT)
-        socketHandler.addFilter(f)
-        rootLogger.addHandler(socketHandler)
+        self.socketHandler.addFilter(f)
+        rootLogger.addHandler(self.socketHandler)
         logger.debug("Set up network logging handler successfull to host {}".format(host))
 
         return True
