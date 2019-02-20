@@ -148,6 +148,7 @@ class RaspyreService(object):
         return True
 
     def ntp_set_server(self, ip_str):
+        self.stop_ntp()
         with open('/etc/ntp.conf', 'w') as ntpfile:
             ntpfile.write('driftfile /var/lib/ntp/ntp.drift\n')
             ntpfile.write('statsdir /var/log/ntpstats/\n')
@@ -160,9 +161,11 @@ class RaspyreService(object):
             ntpfile.write('restrict 10.0.0.0 mask 255.0.0.0 nomodify notrap\n')
             ntpfile.write('restrict 127.0.0.1\n')
         self.is_ntp_master = False
+        self.start_ntp()
         return True
 
     def ntp_master(self):
+        self.stop_ntp()
         with open('/etc/ntp.conf', 'w') as ntpfile:
             ntpfile.write('driftfile /var/lib/ntp/ntp.drift\n')
             ntpfile.write('statsdir /var/log/ntpstats/\n')
@@ -175,6 +178,7 @@ class RaspyreService(object):
             ntpfile.write('restrict 10.0.0.0 mask 255.0.0.0 nomodify notrap\n')
             ntpfile.write('restrict 127.0.0.1\n')
         self.is_ntp_master = True
+        self.start_ntp()
         return True
 
     def get_dns_info(self):
