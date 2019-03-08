@@ -44,8 +44,7 @@ import struct
 
 class IPContextFilter(logging.Filter):
     def __init__(self):
-        self.ip_address = get_ip_address('mesh0')
-
+        self.ip_address = get_ip_address('mesh0') 
     def filter(self, record):
         record.ip = self.ip_address
         return True
@@ -88,6 +87,7 @@ class RaspyreService(object):
         self.is_blinking = False
 
         self.socketHandler = None
+        self.ip_addr = get_ip_address('mesh0') 
         
         logger.debug("Initialized RaspyreService")
 
@@ -148,7 +148,6 @@ class RaspyreService(object):
         return True
 
     def ntp_set_server(self, ip_str):
-        self.stop_ntp()
         with open('/etc/ntp.conf', 'w') as ntpfile:
             ntpfile.write('driftfile /var/lib/ntp/ntp.drift\n')
             ntpfile.write('statsdir /var/log/ntpstats/\n')
@@ -161,11 +160,10 @@ class RaspyreService(object):
             ntpfile.write('restrict 10.0.0.0 mask 255.0.0.0 nomodify notrap\n')
             ntpfile.write('restrict 127.0.0.1\n')
         self.is_ntp_master = False
-        self.start_ntp()
+        subprocess.Popen(['sudo', '/bin/systemctl', 'restart', 'ntp.service'])
         return True
 
     def ntp_master(self):
-        self.stop_ntp()
         with open('/etc/ntp.conf', 'w') as ntpfile:
             ntpfile.write('driftfile /var/lib/ntp/ntp.drift\n')
             ntpfile.write('statsdir /var/log/ntpstats/\n')
@@ -178,7 +176,7 @@ class RaspyreService(object):
             ntpfile.write('restrict 10.0.0.0 mask 255.0.0.0 nomodify notrap\n')
             ntpfile.write('restrict 127.0.0.1\n')
         self.is_ntp_master = True
-        self.start_ntp()
+        subprocess.Popen(['sudo', '/bin/systemctl', 'restart', 'ntp.service'])
         return True
 
     def get_dns_info(self):
@@ -372,6 +370,7 @@ class RaspyreService(object):
             sensors[sensorname] = {k : sensor[k] for k in ('sensortype', 'configuration', 'frequency', 'axis', 'measuring')}
         ret =  {"is_portal":is_portal,
                 "is_ntp_master":is_ntp_master,
+                "ip_addr":self.ip_addr,
                 "sensors":sensors}
         return ret
         
