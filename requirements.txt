@@ -1,4 +1,3 @@
-raspyre
 pyyaml
 pyzmq
 multiprocessing-logging
