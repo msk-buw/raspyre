@@ -114,7 +114,7 @@ class HandlerProcess(multiprocessing.Process):
                         self.socket.send(sample)
                     if self.exitEvent.is_set():
                         break
-                    time.sleep(0.02)
+                    time.sleep(0.001)
                 #self.logger.debug("index overrun, processing till ring size")
                 #for i in range(old_index, self.ring_size):
                 #    offset = self.start_offset + i * self.data_size
