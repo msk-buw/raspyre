@@ -2,6 +2,8 @@
 RasPyre
 ===============================
 
+.. image:: https://raw.githubusercontent.com/msk-buw/raspyre/master/raspyre-logo.png
+
 RasPyre is a Raspberry Pi based Software Framework for the application in Structural Health Monitoring.
 A variety of sensor hardware can be rapidly incorporated and controlled. The integrated WiFi mesh configuration
 enables users to set up an ad-hoc wireless sensor network.
