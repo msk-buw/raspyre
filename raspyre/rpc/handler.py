@@ -115,27 +115,6 @@ class HandlerProcess(multiprocessing.Process):
                     if self.exitEvent.is_set():
                         break
                     time.sleep(0.001)
-                #self.logger.debug("index overrun, processing till ring size")
-                #for i in range(old_index, self.ring_size):
-                #    offset = self.start_offset + i * self.data_size
-                #    values = struct.unpack(self.fmt, self.buf[offset:offset+self.data_size])
-                #    f.write("%f %f %f %f\n" % (values[0], values[1], values[2], values[3]))
-                #old_index = 0
-                #elif index > old_index:
-                #for i in range(old_index, index + 1):
-                #    offset = self.start_offset + i * self.data_size
-                #    values = struct.unpack(self.fmt, self.buf[offset:offset+self.data_size])
-                #    f.write("%f %f %f %f\n" % (values[0], values[1], values[2], values[3]))
-                #old_index = index + 1
-
-            #with open(filename, 'w') as f:
-                #while True:
-                    ##self.logger.debug("Index: {}".format(index))
-#
-                    #time.sleep(0.5)
-                    #if(self.exitEvent.is_set()):
-                        #break
-                #f.flush()
 
     def shutdown(self):
         self.logger.debug("shutdown() called")
