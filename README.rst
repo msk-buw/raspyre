@@ -12,6 +12,8 @@ Please cite our work when using our software in your own research or publication
 
 https://www.uni-weimar.de/en/civil-engineering/chairs/modelling-and-simulation-of-structures/research/software/
 
+Morgenthal, G.; Eick, J.F.; Rau, S.; Taraben, J. Wireless Sensor Networks Composed of Standard Microcomputers and Smartphones for Applications in Structural Health Monitoring. Sensors 2019, 19, 2070. 9
+
 .. image:: https://zenodo.org/badge/183266960.svg
    :target: https://zenodo.org/badge/latestdoi/183266960
 
