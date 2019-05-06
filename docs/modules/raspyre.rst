@@ -1,58 +1,64 @@
 raspyre package
 ===============
 
+.. automodule:: raspyre
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 Subpackages
 -----------
 
 .. toctree::
 
+    raspyre.rpc
     raspyre.sensors
 
 Submodules
 ----------
 
-raspyre\.converter module
--------------------------
+raspyre.converter module
+------------------------
 
 .. automodule:: raspyre.converter
     :members:
     :undoc-members:
     :show-inheritance:
 
-raspyre\.helpers module
------------------------
+raspyre.helpers module
+----------------------
 
 .. automodule:: raspyre.helpers
     :members:
     :undoc-members:
     :show-inheritance:
 
-raspyre\.record module
-----------------------
+raspyre.record module
+---------------------
 
 .. automodule:: raspyre.record
     :members:
     :undoc-members:
     :show-inheritance:
 
-raspyre\.sensor module
-----------------------
+raspyre.sensor module
+---------------------
 
 .. automodule:: raspyre.sensor
     :members:
     :undoc-members:
     :show-inheritance:
 
-raspyre\.sensorbuilder module
------------------------------
+raspyre.sensorbuilder module
+----------------------------
 
 .. automodule:: raspyre.sensorbuilder
     :members:
     :undoc-members:
     :show-inheritance:
 
-raspyre\.storage module
------------------------
+raspyre.storage module
+----------------------
 
 .. automodule:: raspyre.storage
     :members:
@@ -60,10 +66,3 @@ raspyre\.storage module
     :show-inheritance:
 
 
-Module contents
----------------
-
-.. automodule:: raspyre
-    :members:
-    :undoc-members:
-    :show-inheritance:

@@ -1,11 +1,16 @@
-raspyre\.sensors package
-========================
+raspyre.sensors package
+=======================
+
+.. automodule:: raspyre.sensors
+    :members:
+    :undoc-members:
+    :show-inheritance:
 
 Submodules
 ----------
 
-raspyre\.sensors\.mockup module
--------------------------------
+raspyre.sensors.mockup module
+-----------------------------
 
 .. automodule:: raspyre.sensors.mockup
     :members:
@@ -13,10 +18,3 @@ raspyre\.sensors\.mockup module
     :show-inheritance:
 
 
-Module contents
----------------
-
-.. automodule:: raspyre.sensors
-    :members:
-    :undoc-members:
-    :show-inheritance:
