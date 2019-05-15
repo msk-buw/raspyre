@@ -11,9 +11,7 @@ Contents:
 .. toctree::
    :maxdepth: 2
 
-   readme
+   quickstart
    installation
-   usage
    modules/modules.rst
-   history
 

@@ -17,21 +17,18 @@ with open(path.join(here, 'HISTORY.rst'), encoding='utf-8') as history_file:
     history = history_file.read().replace('.. :changelog:', '')
 
 requirements = [
-    'raspyre',
-    'arrow'
 ]
 
 test_requirements = [
-    # TODO: put package test requirements here
     'pytest'
 ]
 
 setup(
-    name='raspyre-rpcserver',
+    name='raspyre',
     version=versioneer.get_version(),
     cmdclass=versioneer.get_cmdclass(),
-    # version="0.2",
-    description="RPC Server Application for the raspyre sensors framework",
+    version="2.1",
+    description="Raspyre Software Framework for SHM applications",
     long_description=readme + '\n\n' + history,
     author="Jan Frederick Eick",
     author_email='jan-frederick.eick@uni-weimar.de',
@@ -44,18 +41,18 @@ setup(
         },
     include_package_data=True,
     install_requires=requirements,
-    license="MIT",
+    license="GPLv3",
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
         'Natural Language :: English',
-        "Programming Language :: Python :: 2",
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.3',
         'Programming Language :: Python :: 3.4',
         'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
     ],
     test_suite='tests',
     tests_require=test_requirements,

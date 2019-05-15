@@ -1,6 +1,0 @@
-.. :changelog:
-
-History
--------
-
-Pre-release

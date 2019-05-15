@@ -1,0 +1,13 @@
+[Unit]
+Description=Raspyre RPC Server Backend
+After=network.target
+
+[Service]
+WorkingDirectory=/home/pi
+ExecStart=/usr/local/bin/raspyre-rpcserver --logfile /home/pi/raspyre-rpc.log /home/pi/data/ --verbose
+User=root
+LimitRTPRIO=90
+LimitRTTIME=infinity
+
+[Install]
+WantedBy=multi-user.target
