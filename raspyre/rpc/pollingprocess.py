@@ -165,12 +165,13 @@ class PollingProcess(multiprocessing.Process):
                 record = self.sensor.getRecord(*self.axis)
             except Exception as e:
                 self.logger.error("Fatal error during sensor.getRecord()", exc_info=True)
+                continue
             data = struct.pack(self.fmt, record.values['time'], *[record[x] for x in self.axis])
             offset = self.start_offset + counter % self.ring_size * self.data_size
             self.buf.seek(offset)
             self.buf.write(data)
-            self.index.value = counter % self.ring_size
             counter += 1
+            self.index.value = counter % self.ring_size
             #toc = time.clock_gettime(time.CLOCK_MONOTONIC)
 
         # terminate() called

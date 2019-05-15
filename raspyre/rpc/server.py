@@ -24,6 +24,7 @@ import os
 import logging
 import logging.config
 import argparse
+import socketserver
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +69,9 @@ class VerboseFaultXMLRPCServer(SimpleXMLRPCServer):
                 "Dispatch exception", exc_info=(exc_type, exc_value, tb))
         return response
 
+
+class ThreadedXMLRPCServer(SimpleXMLRPCServer, socketserver.ThreadingMixIn):
+    pass
 
 class RequestHandler(SimpleXMLRPCRequestHandler, SimpleHTTPRequestHandler):
     rpc_paths = ('/RPC2', '/')
@@ -158,8 +162,10 @@ def run_rpc_server(datadir, address="0.0.0.0", port=8000, logfile=None, configdi
 
     #server = VerboseFaultXMLRPCServer(
     #    (address, port), requestHandler=RequestHandler, allow_none=True, logRequests=True)
-    server = SimpleXMLRPCServer(
-        (address, port), requestHandler=RequestHandler, allow_none=True, logRequests=True)
+    #server = SimpleXMLRPCServer(
+    #    (address, port), requestHandler=RequestHandler, allow_none=True, logRequests=True)
+    server = ThreadedXMLRPCServer(
+            (address, port), requestHandler=RequestHandler, allow_none=True, logRequests=True)
 
     raspyreservice = RaspyreService(data_directory=datadir,
                                     configuration_directory=configdir)
