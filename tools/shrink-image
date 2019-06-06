@@ -1,0 +1,155 @@
+#!/bin/bash
+
+set -e
+
+LOOPDEVICE=/dev/loop0
+
+if [[ $# -ne 1 ]] || [[ ! -f $1 ]]
+then
+    echo "Usage: $0 image_file_to_shrink.img"
+    exit 1
+fi
+
+# Check if there is a loop device already existing with our image
+if losetup -l | grep -q "$LOOPDEVICE.*$1"; then
+    echo "Detaching already used loop device"
+    losetup -d $LOOPDEVICE
+fi
+
+STARTSECTOR=$(fdisk -l $1 | grep $12 | awk '{print $2}')
+echo "start sector of data partition found at $STARTSECTOR"
+
+echo "Creating loop device for partition"
+losetup $LOOPDEVICE $1 -o $(($STARTSECTOR*512))
+
+#tune2fs -l /dev/loop0 | grep -e 'Block size' | sed -e 's/.*[^0-9]\([0-9]\+\)/\1/'
+ #sudo tune2fs -l /dev/loop0 | grep -e 'Block size' | sed -e 's/.*[^0-9]\([0-9]\+\)/\1/'
+TUNEFSINFO=$(tune2fs -l $LOOPDEVICE)
+BLOCKSIZE=$(echo "$TUNEFSINFO" | grep -e 'Block size' | sed -e 's/.*[^0-9]\([0-9]\+\)/\1/')
+BLOCKCOUNT=$(echo "$TUNEFSINFO" | grep -e 'Block count' | sed -e 's/.*[^0-9]\([0-9]\+\)/\1/')
+FREEBLOCKS=$(echo "$TUNEFSINFO" | grep -e 'Free blocks' | sed -e 's/.*[^0-9]\([0-9]\+\)/\1/')
+
+#echo $BLOCKSIZE
+#echo $BLOCKCOUNT
+#echo $FREEBLOCKS
+
+USEDBLOCKS=$(($BLOCKCOUNT - $FREEBLOCKS))
+NEWSIZE=$(($USEDBLOCKS+(50000000/$BLOCKSIZE))) # add roughly 50 megabytes as a safety
+UNIT="K"
+#echo "used blocks: $USEDBLOCKS"
+echo "Reducing filesystem size to $NEWSIZE kilobytes"
+
+if [[ $NEWSIZE -gt $BLOCKCOUNT ]]
+then
+    echo "Error: can not shrink image file - too much space used in image"
+    exit 2
+fi
+
+echo "Checking filesystem for errors"
+e2fsck -fy $LOOPDEVICE
+echo "Shrinking filesystem to $NEWSIZE blocks"
+
+if RESIZE2FSOUTPUT=$((resize2fs -p $LOOPDEVICE $NEWSIZE) 2>&1); then
+    echo "Successfully resized"
+else
+    echo "Could not resize" 
+    MINIMUMSIZE=$(echo "$RESIZE2FSOUTPUT" | grep -e 'minimum' | sed -e 's/.*[^0-9]\([0-9]\+\).*/\1/')
+    echo "Minimum size appears to be $MINIMUMSIZE blocks - retrying resize operation"
+    NEWSIZE=$(($MINIMUMSIZE+1000))
+    resize2fs -p $LOOPDEVICE $NEWSIZE
+fi
+
+echo "Detaching loop device"
+losetup -d $LOOPDEVICE
+sleep 2
+
+echo "Recreating loop device"
+losetup $LOOPDEVICE $1
+
+echo "Modifying partition table"
+SECTORSIZE=$((($NEWSIZE*$BLOCKSIZE)/512))
+echo ", $SECTORSIZE" | sfdisk -N 2 $LOOPDEVICE
+
+ENDSECTOR=$(fdisk -l /dev/loop0 | awk '/loop0p2/ {print $3}')
+
+echo "Detaching loop device"
+losetup -d $LOOPDEVICE
+sleep 2
+
+echo "Truncating image file"
+truncate -s $((($ENDSECTOR+1)*512)) $1
+
+BOOTPARTSTART=$(fdisk -l $1 | grep -e "$11" | awk '{print $2}')
+echo "Start of boot partition at $BOOTPARTSTART"
+echo "Creating loop device for boot partition"
+losetup $LOOPDEVICE $1 -o $(($BOOTPARTSTART*512))
+echo "Mounting boot partition"
+TMPMOUNTDIR=$(mktemp -d)
+mount -o loop,rw,sync $LOOPDEVICE $TMPMOUNTDIR
+
+echo "Attaching filesystem resize script to boot init"
+#printf "%s" " init=/usr/lib/raspi-config/init_resize.sh" >> $TMPMOUNTDIR/cmdline.txt
+sed -i '${s/$/ init=\/usr\/lib\/raspi-config\/init_resize.sh/}' $TMPMOUNTDIR/cmdline.txt
+echo "successfully added resize script to /boot/cmdline.txt"
+
+
+echo "unmountin boot partition"
+umount $TMPMOUNTDIR
+
+echo "detaching loop device for boot partition"
+losetup -d $LOOPDEVICE
+sleep 1
+
+ROOTPARTSTART=$(fdisk -l $1 | grep -e "$12" | awk '{print $2}')
+echo "Start of root partition at $ROOTPARTSTART"
+echo "Creating loop device for root partition"
+losetup $LOOPDEVICE $1 -o $(($ROOTPARTSTART*512))
+echo "Mounting root partition"
+TMPMOUNTDIR=$(mktemp -d)
+mount -o loop,rw,sync $LOOPDEVICE $TMPMOUNTDIR
+
+echo "Writing init.d resize script to /etc/init.d/"
+cat << EOF > $TMPMOUNTDIR/etc/init.d/resize2fs_once
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          resize2fs_once
+# Required-Start:
+# Required-Stop:
+# Default-Start: 3
+# Default-Stop:
+# Short-Description: Resize the root filesystem to fill partition
+# Description:
+### END INIT INFO
+. /lib/lsb/init-functions
+case "$1" in
+  start)
+    log_daemon_msg "Starting resize2fs_once"
+    ROOT_DEV=$(findmnt / -o source -n) &&
+    resize2fs $ROOT_DEV &&
+    update-rc.d resize2fs_once remove &&
+    rm /etc/init.d/resize2fs_once &&
+    log_end_msg $?
+    ;;
+  *)
+    echo "Usage: $0 start" >&2
+    exit 3
+    ;;
+esac
+EOF
+
+echo "Setting executable rights"
+chmod +x $TMPMOUNTDIR/etc/init.d/resize2fs_once
+
+echo "Linking resize2fs_once to /etc/rc3.d/"
+ln -s ../init.d/resize2fs_once $TMPMOUNTDIR/etc/rc3.d/S01resize2fs_once
+
+echo "unmountin root partition"
+umount $TMPMOUNTDIR
+
+echo "detaching loop device for root partition"
+losetup -d $LOOPDEVICE
+sleep 1
+
+echo "All done."
+exit 0
+
