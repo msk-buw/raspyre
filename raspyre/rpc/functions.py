@@ -367,7 +367,7 @@ class RaspyreService(object):
         sensors = {}
         for sensorname, sensor in self.sensors.items():
             # extract relevant information out of sensor dictionary
-            sensors[sensorname] = {k : sensor[k] for k in ('sensortype', 'configuration', 'frequency', 'axis', 'measuring')}
+            sensors[sensorname] = {k : sensor[k] for k in ('sensortype', 'configuration', 'frequency', 'axis', 'measuring', 'zmq_port')}
         ret =  {"is_portal":is_portal,
                 "is_ntp_master":is_ntp_master,
                 "ip_addr":self.ip_addr,
@@ -444,7 +444,8 @@ class RaspyreService(object):
                 "measuring": False,
                 "stream": "",
                 "sensor": sensor,
-                "mmap_file": mmap_file
+                "mmap_file": mmap_file,
+                "zmq_port": self.sensor_count + 1
             }
             self.sensor_count += 1
             logger.debug("Successfully instantiated polling process")

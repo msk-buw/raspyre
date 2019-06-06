@@ -100,12 +100,20 @@ class HandlerProcess(multiprocessing.Process):
                 while True:
                     index = struct.unpack('i', self.buf[0:4])[0]
                     buffer_range = range(0)
-                    if old_index > index:
+                    #if old_index > index:
+                    #    buffer_range = range(old_index, self.ring_size)
+                    #    old_index = 0
+                    #elif index > old_index:
+                    #    buffer_range = range(old_index, index+1)
+                    #    old_index = index + 1
+                    if old_index == index:
+                        buffer_range = range(0)
+                    elif old_index < index:
+                        buffer_range = range(old_index, index)
+                        old_index = index
+                    else:
                         buffer_range = range(old_index, self.ring_size)
                         old_index = 0
-                    elif index > old_index:
-                        buffer_range = range(old_index, index+1)
-                        old_index = index + 1
                     # process buffer slice
                     for i in buffer_range:
                         offset = self.start_offset + i * self.data_size
