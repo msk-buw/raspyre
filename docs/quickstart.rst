@@ -112,7 +112,6 @@ Frontend software
    .. _mainwindow:
    .. figure:: images/screen_main.JPG
        :alt: caSHMere main interface after startup.
-       :width: 800px
 
        **caSHMere** main interface after startup.
 

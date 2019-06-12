@@ -2,6 +2,8 @@
 RasPyre
 ===============================
 
+|docs| |doi|
+
 .. image:: https://raw.githubusercontent.com/msk-buw/raspyre/master/raspyre-logo.png
 
 RasPyre is a Raspberry Pi based Software Framework for the application in Structural Health Monitoring.
@@ -18,22 +20,22 @@ Related publications:
 Morgenthal, G.; Eick, J.F.; Rau, S.; Taraben, J. Wireless Sensor Networks Composed of Standard Microcomputers and Smartphones for Applications in Structural Health Monitoring. Sensors 2019, 19, 2070. 9
 Available online: https://www.mdpi.com/1424-8220/19/9/2070
 
-.. image:: https://zenodo.org/badge/183266960.svg
-   :target: https://zenodo.org/badge/latestdoi/183266960
 
-Installation
-------------
+Documentation
+-------------
 
-* Linux
+You can find the latest documentation online at `<https://raspyre.readthedocs.io>`_ .
+Or download the latest `PDF documentation <https://buildmedia.readthedocs.org/media/pdf/raspyre/latest/raspyre.pdf>`_.
 
-On the command line, install the dependencies::
+Downloads
+---------
 
-  $ pip install -r requirements.txt
+The latest version of our preconfigured Raspberry Pi SD card image can, as well as the latest version of the corresponding frontend application `caSHMere` can be downloaded from the `Releases <https://github.com/msk-buw/raspyre/releases>`_ tab.
 
-Then install the package itself::
 
-  $ python setup.py install
+.. |docs| .. image:: https://readthedocs.org/projects/raspyre/badge/?version=latest
+             :target: https://raspyre.readthedocs.io/en/latest/?badge=latest
+             :alt: Documentation Status
 
-After the successfull installation the RPC server is available as a command line tool (``raspyre-rpcserver``). If you wish to start the service automatically copy the file ``raspyre-rpcserver.service`` to ``/etc/systemd/system/`` and enable the systemd service::
-
-  # systemctl enable raspyre-rpcserver
+.. |doi| .. image:: https://zenodo.org/badge/183266960.svg
+            :target: https://zenodo.org/badge/latestdoi/183266960
