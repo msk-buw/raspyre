@@ -85,7 +85,7 @@ pygments_style = 'sphinx'
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = False
 
-
+numfig = True
 # -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -122,7 +122,7 @@ latex_elements = {
 
     # The font size ('10pt', '11pt' or '12pt').
     #
-    'pointsize': '12pt',
+    'pointsize': '11pt',
 
     # Additional stuff for the LaTeX preamble.
     #
@@ -172,4 +172,4 @@ texinfo_documents = [
 #intersphinx_mapping = {'https://docs.python.org/': None}
 intersphinx_mapping = {'python': ('https://docs.python.org/3.5', None)}
 
-#autodoc_mock_imports = ['pyrt']
+autodoc_mock_imports = ['python_hosts', 'multiprocessing_logging']
