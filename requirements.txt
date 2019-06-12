@@ -1,6 +1,6 @@
 multiprocessing_logging~=0.2.6
 netifaces~=0.10.9
 python_hosts~=0.4.5
-pyzmq==16.0.1
-pystemd
+#pyzmq==16.0.1
+#pystemd
 pyyaml

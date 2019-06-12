@@ -172,4 +172,4 @@ texinfo_documents = [
 #intersphinx_mapping = {'https://docs.python.org/': None}
 intersphinx_mapping = {'python': ('https://docs.python.org/3.5', None)}
 
-autodoc_mock_imports = ['python_hosts', 'multiprocessing_logging']
+autodoc_mock_imports = ['python_hosts', 'multiprocessing_logging', 'zmq']
