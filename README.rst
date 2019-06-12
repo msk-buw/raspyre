@@ -20,6 +20,7 @@ Related publications:
 Morgenthal, G.; Eick, J.F.; Rau, S.; Taraben, J. Wireless Sensor Networks Composed of Standard Microcomputers and Smartphones for Applications in Structural Health Monitoring. Sensors 2019, 19, 2070. 9
 Available online: https://www.mdpi.com/1424-8220/19/9/2070
 
+|doi|
 
 Documentation
 -------------
@@ -33,9 +34,9 @@ Downloads
 The latest version of our preconfigured Raspberry Pi SD card image can, as well as the latest version of the corresponding frontend application `caSHMere` can be downloaded from the `Releases <https://github.com/msk-buw/raspyre/releases>`_ tab.
 
 
-.. |docs| .. image:: https://readthedocs.org/projects/raspyre/badge/?version=latest
-             :target: https://raspyre.readthedocs.io/en/latest/?badge=latest
-             :alt: Documentation Status
+.. |docs| image:: https://readthedocs.org/projects/raspyre/badge/?version=latest
+          :target: https://raspyre.readthedocs.io/en/latest/?badge=latest
+          :alt: Documentation Status
 
-.. |doi| .. image:: https://zenodo.org/badge/183266960.svg
-            :target: https://zenodo.org/badge/latestdoi/183266960
+.. |doi| image:: https://zenodo.org/badge/183266960.svg
+         :target: https://zenodo.org/badge/latestdoi/183266960
