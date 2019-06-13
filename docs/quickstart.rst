@@ -122,8 +122,9 @@ Frontend software
    .. note::
       **caSHMere** needs full network permissions to run properly. On Windows you should allow network access when you are presented the firewall prompt (:numref:`windowsfirewall`).
 
-      .. _windowsfirewall:
-      .. figure:: images/windows_firewall.png
+
+   .. _windowsfirewall:
+   .. figure:: images/windows_firewall.png
 
       Windows firewall prompt to allow network access of the application.
 
